@@ -23,7 +23,7 @@ navbar-links:
   About Me: "aboutme"
   Blog:
     - AI: "blog_ai"
-    - Projects: "blog_projects"
+    - Drafts: "blog_drafts"
 
 
 ################
