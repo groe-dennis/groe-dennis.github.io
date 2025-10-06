@@ -5,7 +5,7 @@ subtitle: "What if we only take gradient steps that everyone agrees on?"
 cover-img: /assets/img/path.jpg
 thumbnail-img: /assets/img/thumb.png
 share-img: /assets/img/path.jpg
-tags: [draft, machine-learning, research]
+tags: [ machine-learning, research]
 ---
 
 ### TL;DR
