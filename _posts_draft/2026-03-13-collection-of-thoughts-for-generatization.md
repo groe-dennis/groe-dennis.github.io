@@ -114,3 +114,20 @@ Can this be done in hidden space? Or somehow optimize such that the intermediate
 Init such that input and output variance are ca 1 (Kaiming for Relu)
 
 # Towards Theoretically Inspired Neural Initialization Optimization
+So given a init, they look at what would theoretically happen if each example would have its own optimization process. Where would it land? If they all land in the same area, that would indicate generalization. 
+As they cant optimize everything indvidually they approximate with 
+GradCosine (GC) — a brand-new, differentiable metric:
+$$\text{GC} = \frac{1}{B^2} \sum_{i=1}^B \sum_{j=1}^B \frac{g_i \cdot g_j}{\|g_i\|_2 \|g_j\|_2}$$
+
+Basically just taking one gradient step and checking how the cosine similarity of the individual gradients is. High GradCosine = gradients of different samples are almost parallel → optimization path is smooth and consistent. They prove mathematically that training loss + generalization error are upper-bounded by something directly related to GradCosine.
+
+They use this insight to optimze a init, such that GC is maximized, via tiny learnable scalar multipliers $  \omega_k  $ to each layer’s weights:
+$$\theta_M = \{\omega_k \cdot W_k\}$$
+
+# Advancing Neural Network Performance through Emergence-Promoting Initialization Scheme
+Their idea: Make init such that 'emergence' is best promoted. 
+Method: Early layers (first half): divide weights by $  \alpha^k  $ (makes them smaller → fewer active neurons).
+Later layers (second half): multiply by $  \alpha^k  $ (makes them larger → more active neurons).
+Why:
+They define an emergence measure $  E  $ based on counting paths in a graph. The math proves $  E  $ is maximized precisely when early layers are less active and late layers are more active — exactly what the asymmetric scaling does. 
+E is basically 
