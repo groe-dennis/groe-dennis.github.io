@@ -237,6 +237,36 @@ They propose that learning with wd has three phases:
 2. Independent Feature Learning
 3. Interactive Feature Learning
 
+## 1 Lazy learning
+The top layer quickly overfits to whatever random junk the hidden layer is outputting. The network looks like it's just memorizing.
+But crucially, weight decay (a tiny bit of L2 regularization, denoted η) makes the back-propagated gradient $  G_F  $ from the top layer suddenly carry real information about the target labels. 
+NOTE: We know that grokking also happens w/o weight decay, so maybe in theory this hold up, but its not soley due to wd
+
+## 2 Independent Feature Learning
+
+Last layer gives some information, the neurons in layer n-1 learn independently. For multi layer networks they say that first the first layer learns, then the second one, etc.
+Each neuron ascends its own energy function. For their modulo addition, they converge to 'irreducible representations', some math things that minimally describes the modulo addition.
+You only need roughly $  2(M-1) = 8  $ hidden neurons (Theorem 3) to perfectly reconstruct the target — versus $  M^2 = 25  $ neurons if you just memorized every possible pair.
+
+Stage 2 rresponds to nonlinear canonical-correlation analysis (CCA) between the input X and target Y
+
+## Interactive Feature Learning
+
+Stage III kicks in after Stage II has produced some (but not necessarily all) irrep features. Now the hidden neurons are no longer independent (?)
+
+Now, similar features get repulsed. Once two neurons $  j  $ and $  l  $ have similar activations $  \mathbf{f}_j \approx \mathbf{f}_l  $, the effective gradient matrix $  B  $ has a negative entry $  b_{jl} < 0  $. This pushes the two neurons away from each other so they specialize on different irreps, increasing diversity.
+
+Suppose the current hidden representation only spans a subset $  S  $ of all irreps. Then, the gradient becomes such that automatically zeros out the gradient for already-learned irreps and boosts the gradient exactly on the missing irreps. 
+→ The energy landscape is dynamically reshaped so that the remaining neurons are attracted only to the missing local maxima.
+
+
+## Other
+The paper emphasizes that residual connections  are extremely helpful here: they provide a cleaner, less-noisy gradient path, bypassing the random re-weighting that would otherwise scramble the signal in deep stacks 
+
+Bonus: The recent Muon optimizer accelerates exactly this Stage III by suppressing gradients that would duplicate already-learned features, making the network explore missing irreps much faster.
+
+Check https://grok.com/c/976d0adb-06c5-486d-ae3d-9edb61aa364b?rid=228e81bf-b57f-46da-b876-ff5bce334180 for some follow-up, grok was busy
+
 
 
 # Intrinsic Task Symmetry Drives Generalization in Algorithmic Tasks
@@ -254,7 +284,7 @@ Also three phases of learning
 2. Symmetry Acquisition (model starts to respect symmetry constraints, so hypothesis space is reduced)
 3. Geometric Organization (optimization biases push model to a simple manifold that satisifies all symmetries)
 
-To Stage 2: Symmetries are constraints on what the true rule can be. Once the network respects them, the only solutions left are the actual algorithmic ones (e.g., addition as a group operation) (not sure about this strong statement)
+To Stage 2: Symmetries are constraints on what the true rule can be. Once the network respects them, the only solutions left are the actual algorithmic ones (e.g., addition as a group operation)(Note the other paper on groups!) (not sure about this strong statement)
 
 They also push for symmetry explicitly, like in addition:
 sym_violation = kl_divergence(softmax(logits), softmax(logits_swapped)).mean()
@@ -265,6 +295,13 @@ regularization, which penalizes the sum of singular values
 and promotes low effective rank; (ii) entropy regularization, which discourages diffuse, high-energy embeddings;
 and (iii) Lipschitz regularization, which enforces local
 smoothness in representation space.
+
+
+They did not check if in-batch symmetry is needed, or whole dataset sufficies. (However for their KL they need it)
+
+I guess one additional point they have is that as soon as symmetry loss is 0, generalization loss is also 0, afterwards they then have lower norm
+
+weight decay is not a necessary condition for generalization. weight decay plays a supplementary role, primarily stabilizing and simplifying representations during the geometric organization stage.
 
 ## My Idea
 Okay if we generalize this, this is bascially reducing the hypothesis space and then searching for any solution in this hypothesis space. Similar to how if we ask a model to write code for ARC, the hypothesis space is reduced to code and if we find a solution in code, the model is likely to generalize. 
@@ -476,3 +513,354 @@ Idk seems not very interesting.
 
 
 # Deep Learning is Not So Mysterious or Different
+
+The author’s core claim is that the three big “anomalous” generalization behaviors everyone talks about—benign overfitting, overparametrization, and double descent—are actually completely normal once you use the right theoretical lens.
+
+People used to think:
+
+“Deep nets have way more parameters than data points → they should overfit horribly.”
+“Yet they generalize amazingly well.”
+“They even fit random noise perfectly and still work on real data.”
+
+This led to the narrative that “deep learning broke classical statistics and we need entirely new theory.”
+Wilson says: No, we don’t. The same behaviors appear in linear models, polynomials, and Gaussian processes when you give them the right soft inductive bias. The mystery disappears if you stop using the wrong tools (VC dimension, Rademacher complexity) and start using the right ones (PAC-Bayes and countable hypothesis bounds).
+
+## Key Idea 1
+
+Traditional thinking: To avoid overfitting, you restrict the hypothesis space (e.g., force the model to be convolutional so it has built-in translation invariance).
+Wilson’s alternative: Give the model an enormously flexible hypothesis space, but add a soft preference for simpler solutions. The model can fit anything, including noise, but it really likes low-complexity (compressible) solutions that are consistent with the data.
+(so basically just regularization lol?)
+
+## Key Idea 2
+ Classical generalization theory (VC dimension, Rademacher complexity, fat-shattering dimension) only looks at how large your hypothesis class $  \mathcal{H}  $ is. These bounds get worse as you add parameters, so they cannot explain why bigger models generalize better. Wilson says the right tools are PAC-Bayes and countable hypothesis bounds. They shift the focus from the size of $  \mathcal{H}  $ to which solutions inside $  \mathcal{H}  $ your prior prefers.
+
+
+
+## Explain phenomena
+
+Larger models actually give you more opportunities to find very flat, simple solutions.
+
+Double descent: First underfit. Then overfit. But then, we start to get many many 0 loss solutions, many of which are low complexity? IDk. but easier to find I guess.
+
+Ok so basically make model large enough to find low complexity solutions. 
+
+ICL: It selects the right “kernel” (or inductive principle) on the fly from the patterns it saw during pre-training — essentially acting like a mixture of Gaussian-process experts.
+
+Larger models have a built-in compression bias. After training they often end up more compressible than smaller models (Maddox et al. 2020; Goldblum et al. 2024).
+
+Effective dimensionality Neff = sum (eigenvalue_i/(eigenvalue_i+alpha))
+It counts “how many directions really matter.”
+Eigenvalues much larger than alpha contribute ~1; tiny eigenvalues contribute ~0.
+
+Think of the loss landscape as a multi-dimensional valley. Each eigenvalue $  \lambda_i  $ tells you how steep the valley is in one particular direction (eigen-direction):
+
+Large $  \lambda_i  $ (much bigger than $  \alpha  $): very steep wall.
+Tiny change in that weight direction → huge increase in loss.
+This direction is sensitive. You must store that weight with high precision; you cannot round it or quantize it much without breaking the model.
+→ Contributes almost +1 to $  N_{\text{eff}}  $.
+
+Small $  \lambda_i  $ (much smaller than $  \alpha  $): almost flat floor.
+You can move the weight a lot in that direction and the loss barely changes.
+This direction is insensitive. You can store that weight with very low precision (coarse quantization, pruning, etc.) and the model still works fine.
+→ Contributes almost 0 to $  N_{\text{eff}}  $.
+
+
+High $  N_{\text{eff}}  $ (e.g. = 4) → many steep directions → the solution is fragile and needs high-precision storage → less compressible (higher Kolmogorov complexity).
+Low $  N_{\text{eff}}  $ (e.g. = 1) → only one steep direction, all the others are flat → the solution is robust and can be stored with very few bits → more compressible.
+
+## Idea
+Can we minimize the eigenvalues as loss?
+
+## Other
+Regularization (e.g., weight decay) is a special case of a Gaussian prior.
+
+
+# Muon Optimizer
+https://chatgpt.com/share/69e77e4b-dc90-8325-b63c-8886798a955a
+* **Adam optimizer** adapts per-parameter using gradient statistics; Muon adapts over time via momentum decay
+* Adam is geometry-aware (rescales directions); Muon is time-aware (damps motion)
+* Adam is stable from the start; Muon is aggressive early and stabilizes later
+* Adam typically needs a learning rate schedule; Muon has built-in decay
+* Adam normalizes updates; Muon reduces momentum over time
+
+
+
+# Parameter Symmetry Potentially Unifies Deep Learning Theory
+
+## Intro
+high-level, unifying hypothesis paper that argues one elegant idea—parameter symmetry (and its breaking/restoration during training)—can tie together a huge number of seemingly unrelated phenomena observed in modern neural networks.
+
+Deep learning is full of hierarchical, phase-transition-like behaviors:
+
+Training suddenly “clicks” and loss drops sharply.
+Networks magically match the right level of complexity to the task (not too simple, not overfitting).
+Representations become beautifully structured and hierarchical (e.g., early layers detect edges, later layers detect concepts).
+
+->
+he authors’ central claim is:
+Symmetry breaking and restoration are the unifying physical mechanism behind all three hierarchies (learning dynamics, model complexity, and representation formation).
+
+They treat neural networks like physical systems (think magnets, water freezing, or superconductivity), where symmetry is a fundamental organizing principle.
+
+## Paramter Symmetry
+A model $  f_\theta  $ has a symmetry under a group $  G  $ if transforming the parameters $  \theta  $ by any $  g \in G  $ leaves the output unchanged:
+
+f_g_transformed(x) = f(x)
+
+Common symmetries in networks include:
+Sign-flip symmetry in ReLU / tanh layers
+Translation symmetry in attention/softmax, etc.
+Scaling/rotation symmetries in linear layers
+
+Symmetries make the network effectively lower-dimensional (many parameters are redundant). Training can break these symmetries (neurons differentiate) or restore them (neurons become identical again).
+
+## The Three Hierarchies the Paper Unifies
+1. Learning Dynamics Hierarchy (temporal phases during training)
+Training often shows abrupt jumps and plateaus. these jumps frequently coincide exactly with moments of symmetry breaking.
+Example: Start with small random initialization → network is highly symmetric → loss is stuck → then symmetry breaks → sudden rapid learning.
+
+2. Model Complexity Hierarchy 
+Even massively overparameterized networks behave as if they have far fewer effective parameters.
+The authors propose a space quantization conjecture: with weight decay, neuron weights are forced to live on a discrete grid separated by a distance proportional to the regularization strength. This bounds the number of active neurons, no matter how wide the layer is.
+the functional complexity of models adapts to the target function –
+this is exhibited in simplicity biases [34], compressive coding through the information bottleneck [67, 68],
+and the “blessing of dimensionality” in overparameterized nets
+
+3. Representation Formation Hierarchy
+distinct spatial structures arise in the layers of neural networks,
+with progressively deeper layers tending to encode increasingly abstract information – this is evidenced
+in the structured representations such as neural collapse [54], hierarchical encoding of features [77], and
+universal alignment of representations across models
+
+
+-> so symmetry can change through time or through layers. eural
+networks are found to break symmetries in early layers and restore symmetries in final layers 
+-> paramter symmetry as a unifying mechanism for deep learning
+
+"With the recent advances in how arbitrary parameter symmetries may be deliberately introduced or removed (Section 6), it is now possible to design symmetries matching practitioner intentions."
+
+## 2 Paramter Symmetry in Deep Learning
+* Neural network architectures have many symmetries, for instance the self-attention layer is (among other symmetries) permutation invariant. 
+* But I think they say both that symmetry can come from architecture so it holds for all parameters and also only holding for specific parameters.
+* "the number of groups induced by these symmetries often grows exponentially in the size of the model"
+* Symmetry means part of the solution paramters are redundant, so its a form of overparametrization
+* "double rotation symmetry causes the self-attention layers to have a low-rank bias"
+
+## 3 Learning Dynamics is Symmetry to Symmetry
+* One primary effect of symmetry on the loss landscape is
+that it creates extended saddle points from which SGD or GD cannot escape (?)
+
+
+* Dynamics Hypothesis: The learning dynamics of neural networks are dominated by jumps between symmetry groups, with parameters going from a larger to a smaller group (symmetry breaking) or from a smaller to a larger group (restoration)
+
+* Models initialized with a small norm are approximatly symmetric ()
+* With those small init models, whenevery symmetry breaks (so distance between normal paramters and group transformed exeedes a threshold), learning happens, else it plateaus
+
+## 4 Symmetry Adaptively Limits Model Complexity
+
+* Complexity Hypothesis: Symmetry adaptively controls the model’s capacity. The model converges to a symmetry class whose complexity matches the complexity of the target.
+
+* loss function symmetry: We apply g to paramters, and loss does not change
+* paramter symmetry: we apply g to paramters and paramaters do not change
+* Lazy learning: weights move only a little bit, essentially its linear regression on the random features
+
+-> Theorem
+If the loss function has G-symmetry, and the initial θ is G-symmetric, there is a model with fewer paramters whos learnign dynamics are the same as θ
+
+
+* Also they conjecutre that with enough regularization, the amount of different neurons in a layer is constant, even if width goes to infinity
+
+## 5 Representation Learning Requires Parameter Symmetry
+
+* earlier layers encode a large variety of low-level features and later layers learn a composed and abstract representation that is invariant to the changes in the low-level details
+-> So if there are small changes such as a shifting of a cat, the later layers will not notice that
+
+* If later/last layers collapse as many directions as there are classes, this corresponds to good generalization, if its more scattered its less good at generalizing
+
+* they train a model with removed permutation symmetries (they do this with a method called syre:
+static (fixed) random Gaussian bias (theta+theta_bias), sampled once at the beginning, never changes
+Thus with weight decay on theta it aligns/onverges with theta_bias. Thus, unlike with normal wd which aligns towards 0, )
+
+
+## Idea
+* Do we really need to go through symmetry breaking to find good symmetries? Can we also just restrict symmetries from the getgo and make the search between two symmetries easier?
+* Is it that symmetries encourage low rank/compressible solutions and thus its useful for generalization or is it the symmetries themselves?
+* Do Python programs have a lot a symmetries and as such provide a good restriction of the hypothesis space?
+* Can we search for smallest subnetwork that still behaves like θ? 
+* Can we introduce arbitray symmetries in a neural network to kind of find the largest set of symmetries that still let the model get 0 train loss? that should be the most compressible and most generalizing solution...
+* For ARC-AGI, check if there are tasks where we can generate a generalizing solution and yet SGD finds a solution that is more compressible but yet more generalizable. That would mean that the search for the simplest network that fits the data is not suffient to finding the most generalizable...
+
+
+* General principle: EXPAND to find differences, clear seperations in the data, then COMPRESS by deleting unneccessary information? In layers of nn but maybe also in GD...
+
+* Like the selfish gene thinks of genes instead of individums maybe we need to think about neurons. Make each neuron want to surivie, ie not have the relu die. survival of the fittest. make this work...
+
+* So basically LLMs think in termns of direction of the activations. Like human understandable would be to have neurons as features, but (maybe its the same) they give each distinct feature a different direction (and maybe also encode in norm). This is also the case of the superposition stuff of Antrophic. What can we do with this information? Rethink how neural networks work... Each layer representing a sum of vectors? then layer above listens for specific vectors that are present... Maaaybe the brittleness of nn comes from the fact that this cannot be encoded definitely with a basis, but they wing it, expecting the features to be far apart such that no collapse occurs. That is why we can always find adverserial examples... And that might be why neural networks get better as they get bigger, as those kind of hash conflicts occur less often... Can we create models that enforce like real features? Maybe for small datasets those would generalize and be not brittle to adverserial attacks.
+-> maybe we can set the amount of directions, and layer does then not output any kind of direction, but a sum of those pseudo basis vectors
+
+# Remove Symmetries to Control Model Expressivity and Improve Optimization
+They kinda argue the opposite of the paper paramater symmetry potentially unifies deep learning theory, in that they pose that symmetries are low rank solutions that make the model less rich (I suppose thats just wrong with what else I learned)
+
+
+# Saddle-to-Saddle Dynamics in Deep Linear Networks: Small Initialization Training, Symmetry, and Sparsity
+
+They study Deep Linear Networks. They say that if initial variance is low, gradient descent goes from saddle point to saddle point of increasing rank. (if variance too high, it is already at global minimun and does not rly learn or smth)
+
+Starts near θ₀ = 0 (rank-0 saddle).
+Escapes along a specific "fast escape path" to a rank-1 saddle (all weight matrices effectively have rank 1, corresponding to learning the dominant singular component/direction).
+Then to rank-2 saddle, etc., up to a low-rank global min or infinity.
+
+In between the saddle points, they prove that GD takes the optimal/fastest path
+
+They low rank solutions that are already found are persisted, with every saddle point a new independent component (singular direction) is added.
+
+## Greedy algorithm
+The paper shows that the saddle-to-saddle dynamics (in the limit of vanishingly small initialization) approximates a greedy low-rank search algorithm.
+
+Intuition: Instead of optimizing the full high-rank matrix at once, the training process behaves as if it is repeatedly solving:
+"Given the current residual error, what is the single best rank-1 update I can add to reduce the loss as much as possible?"
+
+The fastest direction corresponds to the largest singualar value.
+
+The paper assumes (and supports with probability statements) that the flow follows the optimal fast escape path with high probability.
+
+Key features:Plateaus: Long periods where loss barely decreases and effective rank stays constant (the network "lingers" near the saddle, because loss is 0 in many directions due to degeneracy of Hessian).
+Sharp transitions: Relatively quicker phases where rank jumps and loss drops.
+
+
+
+
+
+
+
+## Idea
+Can we make that explicit in the sense that we first have a rank 1 completly shared network where we learn all there is, then we add another matrix etc etc, and freeze everything that is already learned
+
+I wonder, if those papers prove that DNN have a low rank bias, why not such a big bias that even for small amount of data the correct solution is found?
+
+* can we track the rank of the neural net during training to see how it behaves
+
+
+# Stochastic Collapse: How Gradient Noise Attracts SGD Dynamics Towards Simpler Subnetworks
+They reveal a strong implicit bias of stochastic gradient descent (SGD)
+that drives overly expressive networks to much simpler subnetworks, thereby
+dramatically reducing the number of independent parameters, and improving generalization
+
+They identify invariant sets, or subsets of parameter space that remain unmodified by SGD
+
+They propose that the simplicity bias of neural networks is due to randomness/noise of SGD (contrary to GD?)
+-> they identify a novel perspective on the source of SGD’s implicit bias
+
+* they introduce invariant sets as subsets of parameter space that, once entered, trap SGD (characterize two such sets that correspond to simpler subnetworks and appear extensively in modern architectures: one for vanishing neurons and the other for identical neurons)
+* Reveal a sufficient condition for stochastic attractivity — a process attracting SGD
+dynamics towards invariant sets. That is s a competition between the loss landscape’s
+curvature around an invariant set and the noise introduced by stochastic gradients
+* Through their frameworks they show the importance of a large learning rate during early training
+
+
+(summary: SGD is biased to simpler subnetworks and those subnetworks can help generalization)
+
+## Strong vs weak directions
+A direction is strong if:
+
+Moving along it significantly reduces loss
+The data has a clear signal there
+Gradients consistently point that way
+
+A direction is weak if:
+
+It only slightly improves loss
+The signal is small or noisy
+Gradients are small and inconsistent
+Intuition
+Strong direction = “there’s clearly something to learn here”
+Weak direction = “maybe there’s something here… or just noise”
+
+-> Now bring in SGD noise (which gets larger with higher learning rate).
+
+Training update ≈
+signal (gradient) + noise (randomness from minibatches)
+
+In strong directions:
+signal >> noise → learning is stable → survives
+In weak directions:
+signal ≈ or < noise → updates are dominated by randomness
+
+-> For those weak directions then, as SGD tends to simpler subnetworks, those neurons that are responsible for the weak directions get 0ed out or similar to other neurons
+
+-> With high lr, we have more noise, so more weak directions fail to survive
+
+-> Weak directions often correspond to small singualr values, fine details or noise in the dataset. If you skip them, generalization is better.
+
+## Ideas
+Maybe training of nn ist actually many stages, but with GD they get mixed together. Like idk first its right loss identification then,...
+Like first we find the rough right solution and then continously refine, and dont refine too early (premature optimization is bad kinda way)
+
+Maybe optimal structure of a nn is fractal.
+
+* In related work they list all the work that went into indentifing how SGD with its elements works to find flat minima? but we want sharp minima?
+
+
+# (No paper) Memorization Capacity
+Interested in how many neuron it takes to learn a specific trainset. Some results:
+
+ O(n) total parameters) to interpolate n generic points (https://chinmayhegde.github.io/fodl/representation01/)
+
+ Tighter constructions show that m ≈ 4 ⌈n / d⌉ neurons can suffice for many datasets in general position.
+
+## Idea
+Train a meta Model on many tasks that takes normal nn and then converts it to one that is generalizing
+
+
+Meta train a model such that it is unable to learn random data (so we optimize init basically) but is able to learn the task at hand. 
+-> interesting if weights can be set in such a adverserial manner that sgd can not converge...?
+
+# Sufficient is better than optimal for training neural networks
+
+The authors argue that, for neural networks, chasing the absolute lowest training loss is often the wrong goal. Their point is that a model can become very good at fitting the training set by also learning its noise and quirks, which hurts performance on new data. They propose a different training style called simmering, which deliberately samples near-optimal weights instead of trying to find one single “best” optimum. In their view, “good enough” can generalize better than “perfect.”
+
+## Simmering
+nstead of minimizing loss and stopping, simmering keeps the model moving around near-good solutions, sampling many of them and averaging their behavior.
+
+So they first go with normal Adam to good solution, then they explore the area around and create a ensemble with that
+
+
+# equivariant networks
+
+* Equivariant neural networks are a class of models designed to handle data symmetries (such as rotations, translations, or reflections) by ensuring that if the input changes, the output changes in an equivalent, predictable way
+
+* Definition of Equivariance: for transformation g: f(g * x) = g * f(x)
+
+* Unlike standard networks that must learn to recognize an object in every possible orientation, equivariant networks understand that a rotated object is the same object, significantly reducing the amount of training data required.
+
+* Example: CNN is translation equivariant
+
+
+# https://www.sethmorton.com/blog/the_geometry_of_surprise
+the author is saying, “not all surprise is the same.” If an AI only records how big the mistake was, it may miss what kind of mistake it was, which makes it worse at learning over time. The proposed alternative is something like a “settling substrate” that keeps more of the geometry of the error signal intact, so the system can learn in a more nuanced way.
+
+Old:
+prediction = model(x)
+actual     = y
+
+error = abs(prediction - actual)   # just one scalar
+
+if error > threshold:
+    curiosity_memory.append(error) # loses detail
+
+New:
+prediction = model(x)
+actual     = y
+
+residual = actual - prediction     # keep full vector / structure
+
+ store details, not just one number
+memory.append({
+    "residual": residual,
+    "context": x.context,
+    "features": x.features
+})
+
+later, learn from patterns in the residual
+if is_unusual(residual, context=x.context):
+    update_specialized_submodule(residual, x.context)
