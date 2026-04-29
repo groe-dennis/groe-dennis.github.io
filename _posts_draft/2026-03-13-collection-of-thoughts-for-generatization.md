@@ -677,10 +677,51 @@ If the loss function has G-symmetry, and the initial θ is G-symmetric, there is
 
 * If later/last layers collapse as many directions as there are classes, this corresponds to good generalization, if its more scattered its less good at generalizing
 
-* they train a model with removed permutation symmetries (they do this with a method called syre:
-static (fixed) random Gaussian bias (theta+theta_bias), sampled once at the beginning, never changes
-Thus with weight decay on theta it aligns/onverges with theta_bias. Thus, unlike with normal wd which aligns towards 0, )
+* they train a model with removed permutation symmetries (they do this with a method called syre: static (fixed) random Gaussian bias (theta+theta_bias), sampled once at the beginning, never changes Thus with weight decay on theta it aligns/onverges with theta_bias. Thus, unlike with normal wd which aligns towards 0, )
+-> after doing syre, the innerclass variance does not vansih
 
+* based on their experiments they propose 3 regimes in the layers of a trained nn
+1. the first few layers of neural networks serve as an expansion phase where the representation becomes linearly separable (a straight line can seperate the features, or a linear layer can. raw input like images is typically not linearly seperatable), which requires the layer to be wide and implies a high rank. So They transform the input into a higher-dimensional or more expressive space where class distinctions become clearer. (Note: Kinda like vipassana) The expanded representation uses many nearly independent directions to "unfold" the manifold and separate classes. Low-rank structure would constrain the features too much, preventing the necessary expressivity for separation. Thus, early layers tend to show increasing or high representation rank
+2. then, a “reduction” phase happens where the irrelevant information is thrown away and the neurons encode more and more compact information
+3. lastly, a “transmission” phase where the layers do nothing except transmitting the signal it receives
+
+
+(Three phases remind me of the emergence paper)
+
+### Platonic representation hypothesis
+Different neural networks, when trained well, tend to learn very similar internal representations of the data — even if they have different architectures, different random initializations, or are trained on slightly transformed versions of the data.
+
+They propose that parameter symmetry, especially double rotation symmetry, is the key mechanism driving this universality.
+
+* Two networks A and B have learned a universal representation if, for any two inputs x₁ and x₂, the following holds approximately: h^A₁(x₁) · h^A₂(x₂) ≈ h^B₁(x₁) · h^B₂(x₂)
+-> so the dot product, so the similaritiy between two representations should be the same in two networks (this is an idealization, in practise, the degree of similarity is measured)
+
+* When neural collapse happens, all examples of the same class collapse to a single point, and the class centers form a regular simplex (equally spaced). Because of this highly structured geometry, any two networks that both achieve NC must automatically have aligned representations. So NC is a strong form of universal representation.
+
+* This all is special, because due to the double rotation symmetry, there exist infinitely many global minima for a deep linear network such that the representations are not aligned. Yet SGD finds the one that are aligned.
+-> This is only possible if the first layer transforms the representation into
+an input-independent form (The first layer of each network must learn to remove the specific quirks or transformations that are unique to its own input data.)
+-> in the degenerate manifold of solutions, the training algorithm prefers a particular and universal one (SGD + stochastic noise (the “entropic force”) prefers the simplest / lowest-volume solutions on this manifold.)
+
+### Double Rotation Symmetry
+also sometimes called coupled or joint rotation symmetry
+In Self-Attention:
+* Rotation of Q and then simultaneously apply the inverse transpose rotation to K
+-> the attention output remains exactly the same.
+-> This creates a huge continuous family of equivalent solutions (a “degenerate manifold”).
+
+## 6 Mechanism and Control
+* stochastic dynamics tend to move to places that are “cold,” a common phenomenon in nature (so symmetric) (In fluids with a temperature gradient, particles (especially large molecules like DNA) tend to move toward the colder region. This happens even without obvious forces — it's a pure entropic/stochastic effect.) (noisy (Brownian) dynamics in systems with position-dependent temperature or noise strength lead to particle accumulation in the "colder" (lower noise / lower fluctuation) areas.)
+
+* In deep learning → parameters move toward more symmetric regions because those regions have lower effective temperature (lower-rank noise covariance Σ).
+
+* They propose an easy idea to introduce more symmetries: 
+change weight W to v × W, where v is a new scalar parameter (a single learnable number)
+The network output stays exactly the same if you scale W up and v down by the same facto -> continuous symmetry: you can rescale v and W in opposite ways without changing the function the network computes.
+Furthermore, if v = 0, the entire layer output becomes zero
+During training, the optimizer can break this symmetry by moving v away from 0 (making the layer more expressive) or restore it by pushing v back toward 0 (making the layer less expressive / more redundant).
+
+-> This trick is described as a special case of the DCS algorithm (Differentiable Constraint by Symmetry) proposed by Liu Ziyin in an earlier paper. DCS is a general method that uses artificial symmetries to enforce constraints (e.g., sparsity or low-rank) in a soft, differentiable way.
 
 ## Idea
 * Do we really need to go through symmetry breaking to find good symmetries? Can we also just restrict symmetries from the getgo and make the search between two symmetries easier?
@@ -698,8 +739,33 @@ Thus with weight decay on theta it aligns/onverges with theta_bias. Thus, unlike
 * So basically LLMs think in termns of direction of the activations. Like human understandable would be to have neurons as features, but (maybe its the same) they give each distinct feature a different direction (and maybe also encode in norm). This is also the case of the superposition stuff of Antrophic. What can we do with this information? Rethink how neural networks work... Each layer representing a sum of vectors? then layer above listens for specific vectors that are present... Maaaybe the brittleness of nn comes from the fact that this cannot be encoded definitely with a basis, but they wing it, expecting the features to be far apart such that no collapse occurs. That is why we can always find adverserial examples... And that might be why neural networks get better as they get bigger, as those kind of hash conflicts occur less often... Can we create models that enforce like real features? Maybe for small datasets those would generalize and be not brittle to adverserial attacks.
 -> maybe we can set the amount of directions, and layer does then not output any kind of direction, but a sum of those pseudo basis vectors
 
+# Symmetry Induces Structure and Constraint of Learning
+## Overview
+Instead of using traditional hard or non-differentiable constraints (like L1 regularization for sparsity, or nuclear norm for low-rank), we can introduce artificial symmetries into the parameterization of the model.
+These symmetries then softly encourage the desired structured constraint (e.g., sparsity, low-rank, group sparsity, etc.) in a fully differentiable way, simply by training with standard SGD + weight decay (or noise).
+In short: Symmetry = Constraint.
+
+## Method
+* Every mirror symmetry (reflection symmetry) in the loss function forces a structured constraint on the parameters.
+* When such a symmetry is present, and gradient noise or wd is strong enough, SGD has a strong tendecy to solutions satisfying Oᵀ θ = 0 (parameters lie in the subspace orthogonal to the symmetry)
+
+* To implement, the most straight-forward method is to multiply a weight matrix with a scalar v
+
+* More advanced, other matrix multiplcations can be done, such as the hadamard product w_i = u_i × v_i, 
+
+
+* The key property is that the reparameterization is faithful — the model can still represent the exact same functions as before (no loss in expressivity when the symmetry is fully broken), but the training dynamics now have a strong bias toward the structured solution you want.
+
 # Remove Symmetries to Control Model Expressivity and Improve Optimization
 They kinda argue the opposite of the paper paramater symmetry potentially unifies deep learning theory, in that they pose that symmetries are low rank solutions that make the model less rich (I suppose thats just wrong with what else I learned)
+
+* Once in a neural network two neurons compute the same feature, backprop can not differentiate them anymore (as the gradient is the same)-> the gradients stay equal and thus the model behaves like a smaller model. (does not go well with the symmetry breaking behavior we indentifed in the previous paper)
+
+* Neural networks are overparamteriazed, many different weights can give the same solution. Among all those that do get a good solution, wd selects. It selects by lower norm. Lower norm happens to align with more symmetry because suppose a1​w1​+a2​w2​=S then for w1​=S, w2​=0 wd cost is S^2, for w1​=w2​=S/2 wd cost is (S/2)^2+(S/2)^2=S^2/2. (L2 penalizes large values quadratically so spreading mass evenly reduces total penalty)
+
+* Once inside a symmetric solution GD can not escape it anymore, because the gradients for the two weights are the same
+
+* Syre fixes this by adding a randomly sampled bias to each weight, that is not changed in training. Thus when wd pushes the weights to symmetry but with the added bias the gradients are still different
 
 
 # Saddle-to-Saddle Dynamics in Deep Linear Networks: Small Initialization Training, Symmetry, and Sparsity
@@ -864,3 +930,23 @@ memory.append({
 later, learn from patterns in the residual
 if is_unusual(residual, context=x.context):
     update_specialized_submodule(residual, x.context)
+
+
+
+# The Tunnel Effect: Building Data Representations in Deep Neural Networks
+Trained neural networks split into extractor and then tunnel, which compresses/plateaus
+
+So similar finding to before. Interestingly, they observe that removing the tunnel increases OOD performance and its better for continual learning.
+
+# Understanding How Nonlinear Networks Create Linearly Separable Features for Low-Dimensional Data
+
+They suppose data that lie on a Union of Subspaces (UoS). That is, data from each class lives approximately on its own low-dimensional linear subspace of dimension r inside a high-dimensional ambient space of dimension d (with r << d).
+
+
+They have a random layer with quadratic activation function and then a linear layer on top. They show and prove that this setup is enough (with not too large witdh) that the random non-linear layer seperates the classes in such a way that the linear layer can get almost perfect accuracy.
+
+* With quadratic activation function they prove, with ReLu they show empirically
+
+* I didnt get too much into the proof, but basically, suppose class 1 are vectors in the x (a,0) axis, class 2 are vecotors on the y axis(0,b). Then there is no linear seperation between them. If we squre them, we get (a², 0) and (0, b²), so points lie only on the positive side of the axis, but still not linearly seperatable. But if we before that do a random projection, then maybe for class 1 we get (a², 0.01a², a², 0.04a²) and for class 2 (0.01b², b², 0.04b², b²). SO class 1 has large values in positions 1 and 3 and class 2 has large values in positions 2 and 4. then a linear clasifier like v = (+1, -1, +1, -1) can seperate them-> For cars: v · f(x) is roughly positive, For dogs: v · f(x) is roughly negative. The more random directions the more likey such a seperation exists.
+
+* For their empirical results, they use a MCR representation of Cifar. It does this by maximizing the difference between (a) the coding rate of all features together and (b) the sum of coding rates of each class separately. In information-theoretic terms, it encourages compression within classes while keeping classes well-separated in the feature space.
