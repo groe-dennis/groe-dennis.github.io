@@ -745,6 +745,10 @@ Instead of using traditional hard or non-differentiable constraints (like L1 reg
 These symmetries then softly encourage the desired structured constraint (e.g., sparsity, low-rank, group sparsity, etc.) in a fully differentiable way, simply by training with standard SGD + weight decay (or noise).
 In short: Symmetry = Constraint.
 
+
+* So when we have symmetries, noise/wd will choose the simplest version that satisfies the symmetry thats the point kinda
+
+
 ## Method
 * Every mirror symmetry (reflection symmetry) in the loss function forces a structured constraint on the parameters.
 * When such a symmetry is present, and gradient noise or wd is strong enough, SGD has a strong tendecy to solutions satisfying Oᵀ θ = 0 (parameters lie in the subspace orthogonal to the symmetry)
@@ -755,6 +759,51 @@ In short: Symmetry = Constraint.
 
 
 * The key property is that the reparameterization is faithful — the model can still represent the exact same functions as before (no loss in expressivity when the symmetry is fully broken), but the training dynamics now have a strong bias toward the structured solution you want.
+
+## Rescaling Symmetry → Sparsity
+* If the loss is unchanged when you rescale a parameter in one direction while rescaling another in the opposite direction, the optimizer (especially with weight decay) prefers to set one of them to zero.
+
+* w_i = u_i × v_i  (element-wise multiplication, Hadamard product)
+
+* there are infinite ways to construct u and v to get the same w. out of all of this solutions, if one is 0, that is a stable point where its hard to move away from
+
+* I dont get it completly (but its simlar to difference of L1 and L2)
+
+* Their hardaman is most similar to L1, but under some circumstances creates even more sparsity.
+
+## B. Rotation Symmetry → Low-Rankness
+
+* Rotation symmetry means you can rotate a subspace of parameters without changing the loss.
+
+* Construct W ∈ ℝ^{m × n}.such that You can apply a rotation matrix R to one set of parameters and R^{-T} (or similar) to another set, and the output remains identical ((e.g., W = A B^T with additional rotational freedom, or more cleverly using coupled rotations similar to double rotation symmetry in attention)
+
+* The optimizer + noise/weight decay favors solutions where W only uses a small number of directions (due to math from paper, ie finding the easiest one in the symmetry manifold) → rank(W) becomes much smaller than min(m, n).
+
+## C. Permutation Symmetry → Homogeneous Ensembling
+* Permutation symmetry is by far the most common and natural symmetry in modern neural networks
+
+* In a fully-connected layer with n neurons, you can arbitrarily permute (swap) the order of the neurons (i.e., swap corresponding rows of the weight matrix to the next layer and columns of the weight matrix from the previous layer). The network function remains exactly the same.
+
+* This extends to attention heads, residual blocks, or any set of "identical" components.
+
+
+A key insight from the paper:
+"This theorem implies that a permutation symmetry can be seen as a generalized form of ensembling smaller submodels."
+In other words, instead of training k completely different models and averaging their predictions (classical ensembling), the network implicitly trains k identical copies of smaller sub-networks and averages them inside the larger model. This is more efficient and emerges automatically.
+
+ou can think of it as the network discovering:
+
+“I only need 8 truly different feature detectors for this task.”
+“I will learn each detector once, then make 10–20 almost-identical copies of it.”
+
+* to break permutation symmetrie, use syre 
+
+* wd pulls towards similar weights, because, I think I explained that elsewhere already.
+
+## Ideas
+So general idea is that with symmetries, there are many ways to paramterize a function. Stochasticity and wd favor the simplest solutions then, of the ones that can be chosen to satisfy the trainset. 
+-> so the more symmetries are induced, the more wd can choose easier functions... introduce the maximum amount or the right symmetries for arc? I mean the data augmentation part that helps a lot is doing a very similar thing I suppose.
+
 
 # Remove Symmetries to Control Model Expressivity and Improve Optimization
 They kinda argue the opposite of the paper paramater symmetry potentially unifies deep learning theory, in that they pose that symmetries are low rank solutions that make the model less rich (I suppose thats just wrong with what else I learned)
