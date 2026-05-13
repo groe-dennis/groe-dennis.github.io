@@ -999,3 +999,291 @@ They have a random layer with quadratic activation function and then a linear la
 * I didnt get too much into the proof, but basically, suppose class 1 are vectors in the x (a,0) axis, class 2 are vecotors on the y axis(0,b). Then there is no linear seperation between them. If we squre them, we get (a², 0) and (0, b²), so points lie only on the positive side of the axis, but still not linearly seperatable. But if we before that do a random projection, then maybe for class 1 we get (a², 0.01a², a², 0.04a²) and for class 2 (0.01b², b², 0.04b², b²). SO class 1 has large values in positions 1 and 3 and class 2 has large values in positions 2 and 4. then a linear clasifier like v = (+1, -1, +1, -1) can seperate them-> For cars: v · f(x) is roughly positive, For dogs: v · f(x) is roughly negative. The more random directions the more likey such a seperation exists.
 
 * For their empirical results, they use a MCR representation of Cifar. It does this by maximizing the difference between (a) the coding rate of all features together and (b) the sum of coding rates of each class separately. In information-theoretic terms, it encourages compression within classes while keeping classes well-separated in the feature space.
+
+# The Platonic Representation Hypothesis
+
+he authors argue that neural network representations are converging — not just within the same domain (e.g., different vision models becoming more similar), but even across modalities like vision and language.
+As models get larger, more capable, and trained on more diverse data, they start to measure distances/similarities between data points (images, text, concepts) in increasingly similar ways. The paper hypothesizes that this convergence is heading toward a shared statistical model of reality
+
+## Key findings:
+
+Larger, better vision models have more aligned representations with each other.
+Stronger language models have representations that align better with vision models (on paired image-text data like Wikipedia Image-Text dataset).
+
+Alignment tends to increase with scale and performance. Higher alignment also correlates with better downstream capabilities
+
+## Critisism
+* Alignment is still weak — Even the best cross-modal scores were modest (e.g., mutual k-NN overlap around 0.16)
+* Metrics are confounded by scale — A 2026 paper ("Revisiting the Platonic Representation Hypothesis: An Aristotelian View") shows that many similarity metrics (especially global ones like CKA) are inflated simply by making models wider or deeper. After proper calibration (permutation-based null models), the strong global convergence largely disappears, though local neighborhood similarity (which points are close to each other) remains significant across modalities. They propose a milder "Aristotelian" version focused on shared local structure rather than a full platonic ideal.
+Global alignment (e.g., CKA or spectral measures): After calibration for model size, the overall similarity of the full embedding spaces looks much weaker than people originally thought. The “big picture” geometry (exact angles and distances between all points) does not match very well.
+Local neighborhood structure (measured by mutual k-NN overlap):
+For the image/concept “cat”:
+In Model X, the 10 closest neighbors might be: dog, lion, tiger, kitten, rabbit, etc.
+In Model Y, the 10 closest neighbors are almost the same set: dog, lion, tiger, kitten, rabbit, etc. (high overlap).
+## More support
+* An Information-Geometric View of the Platonic Hypothesis: 
+From a Bayesian perspective: When you train a neural network, you're (implicitly) performing Bayesian inference
+As the amount of data grows and the model capacity increases (more parameters, more expressive architectures), the posterior concentrates sharply around the true underlying function
+Result: Their internal similarity structures (kernels) align because they're all converging to the same optimal approximation of reality.
+For sufficiently large/expressive models, this convergence is inevitable.
+
+They also prove a "disunion theorem": If two models have meaningfully different approximation capabilities (e.g., one is much narrower or has a strong inductive bias mismatch), their representations will diverge, and the separation can grow exponentially with more data. This explains why we see strong alignment in general-purpose foundation models but not necessarily in narrow/specialized ones.
+
+* Harnessing the Universal Geometry of Embeddings (Strong platonic representation hypothesis)
+Not only do sufficiently large models converge to similar representations of reality, but their embedding spaces are so geometrically similar that you can learn a translation function between them without any paired examples
+They introduce an unsupervised method to translate embeddings from one model (e.g., embeddings from Llama-3) into another model's space (e.g., Gemma or even a very different architecture), or into a "universal" latent space.
+
+The method works by exploiting the assumption that the underlying geometry (relative distances/angles between concepts) is approximately universal.
+
+
+# Information-Theoretic Progress Measures reveal Grokking is an Emergent Phase Transition
+* proposes information theory as a taskindependent tool to identify emergent sub-networks in neural networks for mechanistic interpretability
+
+Important concepts:
+* Synergy refers to the cooperative behavior between variables as a whole,
+where their combined statistical interactions exceed the sum
+of their contributions in isolation. 
+* Redundancy is the shared information between variables
+
+In this paper, we hypothesize that grokking is a phase
+transition caused by the emergence of a generalizing subnetwork due to the collective interactions between neurons
+as a whole, which cannot be quantified using pairwise metrics
+
+To
+understand grokking, we utilize the O-Information - a multivariate information theory measure that scales to multiple
+variables - to quantify the synergy and redundancy in a
+network 
+
+
+
+# Sparsely Supervised Diffusion (SSD)
+Training objective (simplified): Optimize the regression loss (denoising or velocity prediction) only over unmasked positions, where m is a binary mask with masking ratio η (probability of masking).
+
+Idea:
+Especially with little data, diffusion models abuse local regularities, and thus often dont have global coherence. With this random masking, they are forced to predict a pixel from far away pixels and thus they also need to model global interaction.
+
+## Ideas
+This kind of reminds me of the podcast from dwarkesh with the biologist that said that the brain predicts everything from everything
+
+also reminds me of my idea to mask in the attention masks of transformer
+
+
+# https://x.com/LodestoneRock/status/2050229072488431706
+Overfit to one sample to do architecure research
+
+# https://flappingairplanes.com/
+Main goal is to use unconventional methods to increase sample efficiency at least 1000x
+
+# https://www.goodfire.ai/research/the-world-inside-neural-networks#
+inner world of neural networks is full of structure that reflects the structure of the outer world
+Ie days of the week, and months of the year[3] are circular loops in the activation of LLMs
+
+Understanding this geometry allwos for deeper understanding and possible steering of the models.
+
+
+
+## Manifold
+A 1D manifold (or 1D curve) in this context is a smooth, continuous path or "string" through the high-dimensional activation space of the neural network. So its basically a function that maps from 1-D to n-D. So you can describe where you are on the manifold only with one number (distance from origin) and this brings you to a point in n-D
+
+In reality the curve is approximated with a spline, isomap, principal curves...
+
+This is why steering along it feels natural: you're moving the model's internal state along the path it actually learned, rather than taking weird shortcuts through empty space.
+
+## Approach
+Train a model (image-action model on mountain climber, predicting images from image+action), gather activations for many images and then visualize them by dimentsionality reduction.
+
+Then from those reduced points they fit a manifold. This enables them to move smoothly along the manifold. Which they show corresponds to the car moving up the hill.
+
+In contrast they show that linear probes (that move between start and end state only in a linear way) come along undefined points in between that correspond to blurred images.
+
+Also: In days of the week when they move along the found manifold, the output also change accoringly (ie friday -> saturday -> sunday output prob). In linear probes, if you go from friday to sunday you never get the output of saturday.
+
+Also, when they ignore the internals and only train to find a curve that does well in behavior space, they get the same path.  (https://www.goodfire.ai/research/manifold-steering#)
+
+## Critiques
+The shape of the manifold is dependent on which dim reduction method you use and thus maybe arbitrary?
+
+But I think in the paper the authors note that its a 'natural' representation.
+
+## Critique from https://deepmanifold.substack.com/p/single-token-geometry-a-critique
+
+(also links some interesting papers)
+Deep Manifolds is his idea:In Deep Manifold, neural networks are understood as learned, stacked, boundary-conditioned manifolds. Activations, outputs, and behaviors are not isolated objects; they are coupled traces of the same learned numerical computation.
+
+Argues that the usage of manifold in goodfire is under-defined and advocates for his more detailed Deep Manifold theory.
+
+Key critique 1: Architectural boundraries are missing. ("A token is not floating freely inside a neural network architecture. It is carried by the architecture and constrained by context, prompt, attention...")
+
+Matters because steering must be done in the conext of the boundaries (ie by modifying the attn?) and not just freely in space. (Not sure how exaclty this can be done, but in spirit its just respecting the architecutre more and not moving freely in embedding space)
+
+Critique 2: He says Goodfire only observe isometry between the geometry in activation and output space. (so that the strucutre in activation space and in output space align). He argues more rigorous theory is needed, citing constrained fixed-point computation of his theory.
+
+Critique 3: didnt understand
+
+
+"In Deep Manifold terms, the wiser path is not to force the manifold from outside, but to improve the boundary conditions under which the manifold learns itself." (so critique is that their method is too artifical and thus prone to overengineering)
+
+## Ideas
+Two questions there.
+First how to differentiate nn representations and thus manifolds that generalize vs those that memorize
+
+And then given we have a memorizing manifold can we still get new ideas/outputs from interpolation
+And if we have a generalizing manifold, can we even get new ideas??
+
+And the even further. lets say we do their experiment but we train on text. for instance on python files that are nn architectures. Can we then interpolate between them and thus get new architectures?
+
+# https://arxiv.org/pdf/2409.17592
+Seems interesting maybe read
+
+# https://www.goodfire.ai/research/vpd-explainer#
+Interpretability not just for activations but for weights/architecuture itself.
+
+* They split the weights into simple, understandbale components.
+
+Identify algorithms implemented in attention layers, even when they are distributed across attention heads[2];
+Edit the original model's behavior with no training — performing "brain surgery" directly on the model's "neural code";
+Recover small subnetworks responsible for specific, abstract behaviors.
+
+## Method
+* Decompose a matrix into rank-1 
+* One subcomponent should be removeable for tasks where its not needed
+* They train another network, the causal importance network. On any given prompt, the causal importance network predicts the minimum number of subcomponents that are causally important to reproduce the model's behavior on that prompt.
+* They also adverserially search for subcomponets that break the behavior of the simpler model they identified (stress-tests both the subcomponents and the selection made by the causal importance model)
+
+(There are also relatively few subcomponents: Decomposing all 24 matrices in the network, we identify only ~10,000 subcomponents. In Llama 3.1 8B)
+
+## Pseudocode
+# VPD Training Overview (simplified)
+
+# 1. Setup
+for each weight matrix W_l in model:
+    initialize many rank-1 candidates: U[l, c], V[l, c]   # c = component index
+    Delta[l] = small residual matrix
+
+causal_g_net = small neural net  # predicts importance g per (input, component)
+
+# 2. Main training loop
+for batch in data_loader:          # batch of sequences
+    # Full forward pass (ground truth)
+    orig_logits = model(batch)     # using full W = sum(u v^T) + Delta
+
+    # Get importances from auxiliary net
+    g = causal_g_net(batch)        # shape ~ [batch, seq, layers, num_components]
+                                   # g ≈ 0..1 per subcomponent
+
+    # --- Stochastic reconstruction (easy cases) ---
+    mask_stoch = sample_masks(g)   # e.g., keep with prob >= g, or uniform in [g,1]
+    masked_W_stoch = reconstruct_weights(U, V, Delta, mask_stoch)
+    recon_stoch = model(batch, weights=masked_W_stoch)
+    loss_recon_stoch = KL(orig_logits, recon_stoch)   # or CE, etc.
+
+    # --- Adversarial reconstruction (hard cases - key innovation) ---
+    mask_adv = adversarial_find_bad_mask(   # gradient ascent on error
+        U, V, Delta, g, batch,
+        steps=10-30,                       # optimize mask within [0,1] bounds from g
+        objective="maximize recon error"
+    )
+    masked_W_adv = reconstruct_weights(U, V, Delta, mask_adv)
+    recon_adv = model(batch, weights=masked_W_adv)
+    loss_recon_adv = KL(orig_logits, recon_adv)
+
+    # --- Regularization losses ---
+    loss_sparsity = mean( g ** p )         # p>1 encourages few high-g components
+    loss_freq     = penalize_overuse(g)    # discourage components used too often
+    loss_delta    = small_delta_loss(Delta)
+    loss_simple   = encourage_rank1_or_low_rank(U, V)
+
+    total_loss = w_adv * loss_recon_adv + w_stoch * loss_recon_stoch \
+                 + reg * (loss_sparsity + loss_freq + loss_delta + ...)
+
+    optimizer.step(total_loss)  # update U/V/Delta + causal_g_net
+
+(note the adverserial loss here: Within respecting the choice of g, they search for combinations of subnetworks that break the reconstruction. Enusures that the high-g components are actually sufficient, and low-g ones are truly save to remove)
+
+## Results
+Targeted edits, ie changeing how emojis are written
+Track a prediction across layers, identifing relevant subcomponents.
+
+## Ideas
+One thing I find interesting here is the adverserial loss. The most general idea here is that you have n choices, you constrain those choices with a model and then inside the contrainst, adverserially search for valid combinations that are still bad.
+-> how to use this for arc? let a model only predict top3 and then inside them adversially search or smth? mhm 
+
+
+# Symmetry in language statistics shapes the geometry of model representations
+
+Main hypothesis: representational manifolds have a universal origin: symmetry in the statistics of natural data. (Note, like the other paper...)
+
+## Preliminaries
+They look at word2vec. Word2vec learns a vector for each word based on co-occurances of words.
+It has been show that they " learn to represent the top eigenmodes of a
+normalized co-occurrence matrix, approximately equal to
+the pointwise mutual information (PMI) matrix:"
+
+PMI(or the approx of it M*) is just the ratio beetween the co-occurance probability Pij and the probability of both words occuring independetly Pi*Pj. (Positive: they occur often together, negative they "repell" so dont like to be together)
+
+Then they say word2vec does PCA on M* = Φ Λ⋆ Φ⊤
+
+The learned embeddings are basically the top eigenvectors (scaled by the square root of the (absolute) eigenvalues)
+
+Okay so now we could build the PMI and then run PCA. But that is expensive. So instead they want to study and predict embeddings without any training.
+
+For that, they leverage special structure in M* (which enables easier analysis than the general PCA).
+(One previous structure is Kornecker deltas, which enables Linear analogies like king - man + woman = queen)
+-> going more into detail: this previous work wants to explain those linear analogies. They see each word as defined by a binary vector of attributes (is royal, is male, etc). If two words share many attributes, the tend to appear together. This produces the Kornecker structure and thus king - man + woman effectively flips the attributes. (also analogies still work if you remove all direct co-occurances because they come from the global attribue patters ?)
+
+So the authors in this paper pull a similar trick. But instead of concrete attributes, they look at continous underlying concepts, like months in a year, or coutries by longitude.
+
+Based on how language is structures they assume translational symmetry. So for the month example, the difference between Jan and Feb should be the same as Jul and August.
+-> If that is true, M* will have a special repeating structure, namely Toeplitz.
+-> When you take the eigenvectors of such a symmetric matrix, they turn out to be sinusoidal waves (Fourier modes) — exactly like sine and cosine waves. 
+More concretly:
+If we assume such a cyclical structure in M*, then when we do PCA on the centered M* the first two PC don't loose any information. And if we project each word to the 2-dim PC, they form a circle (PC 1 is sin, pc2 cos, together in 2d that is apparently a circle. )
+
+
+## Related Work
+"LLMs learn low-order token correlations—
+e.g., the pairwise statistics captured by word embedding
+models—before higher-order ones. This suggests that large
+language models learn contextualized representations and
+computational circuits atop coarse low-order statistics of
+natural language. "
+
+## 3. Co-occurrence model with symmetry
+Goal: describe the representational geometry of words and phrases that share an underlying continuous concept such as the time of year, historical dates, purely by math, assuming a natural symmetry in language.
+
+1. Assumption:How often two words appear together depends only on how far apart they are on the hidden concept (Again, ie 2021 and 2020 occur as often as 1440 and 1441)
+2. Given that, words are spaced on a circle (because of fourrier stuff)
+they also make other geometric predictions, with slightly different assumptions
+Adding more PCs adds ripples
+
+they also have a plot of US states. Here they with theory predcit i.e. a west-east difference and the observations also support that(better for smaller models, here not much else stuff can be learned). Interesting, because even though there is a lot more information that relates states to each other (sport, culture,...), the translational symmetric one seems to dominate. 
+-> core thesis of the paper: Even though natural language contains tons of other information (syntax, topics, sentiment, analogies, culture, facts, etc.), the translation symmetry in simple pairwise co-occurrence statistics is strong enough that it dominates and predicts the most prominent geometric structures we observe in word embeddings and even in LLM representations.
+
+## Ideas
+"LLMs first learn low-order statistics before higher-order/contextual ones". Can we unlearn the low-order, the spurious cues? And thus only keep higher order ones?
+-> with the quote above, this seems kinda like the models first use the simplest low-order correltations to do the task. if that does not suffice (ie if the data is too large), the higher order correlations are taken.
+Wow that is a nice view! from that perspective llms are actually doing "finding simplest solution" only that the simple they use is not the simple we want to have. But they explore in ever more "complex" ways in this perspective. so we would need a way to revert that or skip early correlations... Like maybe even though lower order correlations do help in predicting text, we would not ever want to use them, as everything can be done with higher level order interactions...
+
+those "low/high order" i guess is directly translated to the eigenvectors etc
+(I should get more intuition for PCA)
+
+translation symmetry means that only relative distance counts?
+
+
+In Figure 1 they have plots that compare theory to observation in Gemma. Well, ideally we would have a training method such that make the empirical observations match the theory, such that we get nice and clean representations...
+
+
+Model LLMs as having a set of concepts (tokens, but also more higher level concepts) that are related with each other. Wolfram alpha style kinda.
+
+So they say that the low-frequency patterns dominate (I think the trans symmetry). But I guess that is not what we want. We would like to have those concepts, but in unrelated topics such as talking about sport, those patterns should not occur anymore.
+Maybe we need to disentangle concept from the magnitude of the concept. The magnitude of the concepts seems to be related to the spurious cues -> works in most cases but if you rely on it, on the actual cases that require reasoning it fails. (like the paper that removes magnite from embeddings, but more principled)
+
+
+
+# snimu omouamoua on x
+SGD as evolutionary search in the loss landscape: 
+Models learns on batch N. If what it learned on batch N is (more or less generalizable) it will then survive the gradient on batch N+1
+## Ideas
+With this framework, would it be then interesting to make two consecutive batches as distinct as possible? Like adverserial batch selection...
+Can we train on cifar in such a way that we have a ordering that generlaizes better?
+But mhm isnt that just like taking average? like if we combined the two batches...

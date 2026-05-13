@@ -34,3 +34,41 @@ Are they all equivalent in their result? Can they be seen through a common lens?
 
 #
 GD learning is data dependet, wd is data independent. However, can we create data such that the effect is the same as wd? would that buy us anything?
+
+#
+On continual learning and ARC - ideally we would like a model that when trained on a new task, can do that very fast. So the low rank solution should be one that can learn very fast and not one that is a specific solution to a specific problem.
+Maybe train a bunch of good solutions for arc tasks and then a new model to make this good solutions fast from only the input...
+
+#
+In the artisotilan view of the platonic representation hypothesis, they postulate that in high dim spaces even random points tend to have a positive correlation. Why is that the case? is that maybe a feature of larger models?
+
+#
+Why is the brain so large, when it can only do a tiny fraction of what modern llms can, like learning infinite languages or knowing all texts...
+maybe a lot more computation has to be applied to some stuff that is previously underlooked
+
+# 
+As each information is just the same in some sense, you can learn any concept or at least any concept up the tree of abstractions from any paper/information.
+
+# 
+We kinda have memorization in llms as their internal knowledge and we have reasoning in terms of their reasoning in the context window.
+We kinda want both but often the memorization kicks in too much - thus we get blunt responses that just iterate the most common stuf you would say to a topic.
+
+However, would it be possible to kind of interpolate between those two modes? such that for problems that require reasoing we would kinda turn of the memorization a bit more? 
+Maybe we can do that by interpolation of the att layers vs the feed forward layers. Ie making the feed forward layers a bit less strong.
+
+#
+Trained nn have a rich structure. Can we train models like RL models inside this rich structure that can explore them and discover useful insights?
+
+#
+code als graph. jedes file/function/etc ist sein eigenes llm und kommuniziert mit allen anderen
+
+#
+Guiding copilot via md files. ie write in a file "first read this, when you implemented, read other file etc" so each file has a pointer to another file. then we can chain planing, implementing, review, simplifiy etc etc.
+
+# Pseudo-commits
+we want the model to do small commits, but not actually commit them. and really need to argue why this change is necessary.
+
+#
+Lower layers, ie in cnns, seem to 'learn the right thing' ie generalize well. maybe its because for the lower structures there is just a lot more training data, ie in a dataset that are many more edges than there are noses. Can we test that in a little experiment? ie artificially generate datasets or only train on a few lower level features.
+But idk, it seems like for language we would never ever want to have "low level features". Like for vision its necessary to get into a space that has meaning, but language already is a space with meaning. So vision models and language models should be trained fundamentally different. 
+In vision models we do want to also use 'low-order' information, in language we would never want that. 
