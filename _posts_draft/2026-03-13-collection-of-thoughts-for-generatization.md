@@ -1259,6 +1259,27 @@ Adding more PCs adds ripples
 they also have a plot of US states. Here they with theory predcit i.e. a west-east difference and the observations also support that(better for smaller models, here not much else stuff can be learned). Interesting, because even though there is a lot more information that relates states to each other (sport, culture,...), the translational symmetric one seems to dominate. 
 -> core thesis of the paper: Even though natural language contains tons of other information (syntax, topics, sentiment, analogies, culture, facts, etc.), the translation symmetry in simple pairwise co-occurrence statistics is strong enough that it dominates and predicts the most prominent geometric structures we observe in word embeddings and even in LLM representations.
 
+(When people visualize embeddings, they usually look at the top 2–4 principal components. These top directions are precisely the ones most strongly controlled by the translation symmetry. The other semantics are there, but they live in higher dimensions and are less visible in the common visualizations.)
+
+## 4. Collective effects control the embedding of space and time
+"If the geometry comes from co-occurrence statistics, what happens if we remove all direct co-occurrences between the months? Does the circle disappear?"
+-> suprising answer: No, circle still appears.
+
+The key insight is that many other words in the vocabulary are also controlled by the same underlying continuous variable. 
+Examples of seasonal helper words:
+
+Winter: ski, snow, Christmas, January, cold, sweater…
+Summer: beach, vacation, July, hot, hurricane, ice cream…
+
+These helper words act as bridges. Even if you remove direct “January–February” co-occurrences, both months still co-occur with many shared seasonal words, so the model can still infer their relationship indirectly.
+
+## Discussion
+a single unifying principle: pairs of words that correspond to similar time or space co-occur more frequently in text.
+
+-> pretty geometries are mostly a low order statistical property of natural language
+
+In neuroscience grid cells(predict movement), similar patterns have been observed. They think this is due to the translational quality of movement.
+
 ## Ideas
 "LLMs first learn low-order statistics before higher-order/contextual ones". Can we unlearn the low-order, the spurious cues? And thus only keep higher order ones?
 -> with the quote above, this seems kinda like the models first use the simplest low-order correltations to do the task. if that does not suffice (ie if the data is too large), the higher order correlations are taken.
@@ -1287,3 +1308,19 @@ Models learns on batch N. If what it learned on batch N is (more or less general
 With this framework, would it be then interesting to make two consecutive batches as distinct as possible? Like adverserial batch selection...
 Can we train on cifar in such a way that we have a ordering that generlaizes better?
 But mhm isnt that just like taking average? like if we combined the two batches...
+
+
+# EVERYTHING, EVERYWHERE, ALL AT ONCE: IS MECHANISTIC INTERPRETABILITY IDENTIFIABLE?
+
+LLMs implement algorithms. So there is a abstract algorithm (what) and the nn implements it in its neural activations (where). 
+So they ask two questions regarding if there are unique explanations
+
+1. Find a circuit, then from there identify the algorithm. (Is the algorithm unique?) (where then what)
+2. Start with an algorithm, search for circuits that implement it. (is there only one explanation)
+
+## Method
+They use small MLPs such that they can enumerate every possible combination of MLP and the task is learning simple bool functions like AND.
+## Findings
+Systematic Non-identifiability:
+
+Where-then-what: They find many circuits that implement one algorithm , even for strong measures like 
