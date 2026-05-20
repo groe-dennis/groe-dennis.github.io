@@ -1313,14 +1313,95 @@ But mhm isnt that just like taking average? like if we combined the two batches.
 # EVERYTHING, EVERYWHERE, ALL AT ONCE: IS MECHANISTIC INTERPRETABILITY IDENTIFIABLE?
 
 LLMs implement algorithms. So there is a abstract algorithm (what) and the nn implements it in its neural activations (where). 
-So they ask two questions regarding if there are unique explanations
+So they ask two questions regarding if there are unique MI explanations for what the models compute. Suppose a NN is trained on XOR. Then they have two questions: 
 
-1. Find a circuit, then from there identify the algorithm. (Is the algorithm unique?) (where then what)
-2. Start with an algorithm, search for circuits that implement it. (is there only one explanation)
+1. (What-then-where) Use candiate algorithms (i.e. NAND OR A AND B (wrong but ye)) and then search in the nn for circuits that match that behavior
+2. (Where-then-what) Find circuits, then interpret what algorithm a circuit implements.
+
 
 ## Method
 They use small MLPs such that they can enumerate every possible combination of MLP and the task is learning simple bool functions like AND.
+
+They link circuits direclty with algorithmic interpretations. For instance, a binary variable F0 can be assigend to a single neuron, with a threshold at 0.
+Or only specific intervals of neuron can be maped, i.e. from 0.1-0.3 it means 1, for -0.1-0 its 0. Parts can have no meaningful interpretation
+For variables with more states, you also need more neurons
+
 ## Findings
 Systematic Non-identifiability:
 
-Where-then-what: They find many circuits that implement one algorithm , even for strong measures like 
+What-then-Where: For a given algorithmic interpretation there are many circuits that do that
+
+Where-then-what: For a given circuit, there are many possible algorithmic interpretations.
+
+
+
+# All Circuits Lead to Rome: Rethinking Functional Anisotropy in Circuit and Sheaf Discovery for LLMs
+
+## Circuits vs Sheafs
+Both are sparse subgraphs (DAG) based on the residual stream(additive updates from attention heads and MLPs across layers)
+
+Circuits causally contribute to a prediction, but if you remove all non-circuit parts the prediction is not necessaryl recovered (Note, so sufficient but not ...)
+
+Sheaf is circuit but more, can standalone execute the task
+
+## Core idea
+They show that there isn't just *the* circuit or sheaf for a specific task (i.e. indirect object identification). Instead, the paper shows that a single task can be supported by multiple, structurally very different (low-overlap) circuits/sheaves, each of which is faithful (performs the task well), sparse, and complete (works in isolation).
+
+* This is not just "backup heads" that activate only when you ablate the main ones (as in prior work like the IOI paper or the Hydra effect). These alternative mechanisms coexist and independently support the task during normal operation.
+
+# Method
+They agument sheaf discovery, by first discovering one good sheaf. Then, in subsequent runs, penalize reusing its edges, forcing the optimizer to find divergent solutions.
+
+## Results
+
+Result on classic benchmarks (especially IOI task in GPT-2 small): Multiple sheaves with near-zero edge overlap (e.g., IoU ~4%) but identical high performance (100% accuracy)
+
+The more sheafs they identify the more distinct the sheafs also get (so the longer you run the discovery, the more diverse sheafs?)
+
+They found an extremely minimal sheaf for the IOI task that only needs 3 edges (connections in the graph) to fully solve the task on its own -> If you remove any one of those 3 edges (forcing the discovery process to avoid it), the method can still find other high-quality sheaves that perform just as well. -> None of the three edges is indispensable across the broader space of solutions. -> This undermines even a weakened version of the "unique mechanism" idea (e.g., "there are a few canonical essential components, plus optional auxiliaries")
+
+In larger models the effect should become more pronounced.
+
+## Explanation
+Exponentially many sparse subgraphs. Due to the geometry and redundancy in high-D space, lots of these subsets end up being functionally equivalent (they move the representation in the right direction for the task). This creates a combinatorial explosion of low-overlap (structurally different) but high-performing solutions
+
+* They also mention the subset sum problem -> res stream is additive with many components, and there are exp many ways to sum up to one number if the components can range freely.
+
+## High-dimensional superposition in LLMs
+
+Res stream has limited dim, but Models need to represent far more features. So in the res stream vector they represent features in near-orthogoal dimensions, which are plenty in high-dim space. 
+When vectors are not perfectly orthogonal, it means that if you want to increase one feature, that will leak into other features at least a tiny bit. 
+-> llms then rely on nonlinearities to filter/clean up those interferences
+
+* Superposition only occurs though for features that co-occur rarely. When features whould occur together often, the interfernce would be too much
+
+* Most SAE features fire only rarely, so they are sparse
+
+* No paper determines exact amount of features they represent (?Evidece: Relu are needed for superposition to occur) but tens of thousands or millions maybe per layer
+
+## Ideas
+The Superposition rarley with dense feature: Explains maybe the ruggedness of llms, because even for sparse features, with many tokens the overlap will be a lot and in those cases the prediction will fail at least somewhat I suppose.
+
+* They don't quite answer if in a normal model for a given prediction the different sheafs all combine for a precition or if one sheaf is taken etc etc
+
+# Mechanistic Interpretability with Sparse Autoencoder Neural Operators
+
+They invent an extension for the SAE. Instead of SAE which maps the res vector (m) to one large sparse vector of size , they map to m*p large vecotr. Basically they thus also have p concepts, but with m they also say where the concept is activated. They apply sparstiy both in concept space (normal SAE) and also in position space (such that concepts dont activate everywhere).
+## Idea
+Not that interesting per se, but the idea behind it seems interesting. Their approach is also just a vector, but they interpret/group it together differently and also they add a another loss function. This seems generally how things work, everything is a vector and the interpretation is what counts.
+
+
+# Geometric Factual Recall in Transformers
+
+They explore how factual recall works in LLMs and propse that LLMs do it differently than previously assumed.
+
+## Previous explanation (algebraic)
+The facts are stored in the MLP. The MLP then basically is a giant lookup table, that stores every fact individually. The embedding would then be the key to ask questions like "Where was Alice born?". MLP then fires when "Alice" and "born in" is activated and gives out the fact.
+
+## Their explanation (geometric)
+They see the emebdding as doing most of the work instead. The embedding has many directions, each of which code for a specific attribute, like "occupation" or "birthplace". Then during inference, when a attribute is asked like "born in", the MLP recognizes that and removes all attributes that do not match this question.
+
+## Ideas
+* General theme I observed now is the following view: An embedding in the res stream stores a number of features, and the MLP with the RELU then distentangles the Superposition and keeps only the relevant features.
+
+* Maybe a good view is that a embedding vector in the res is a superposition vector, ie many directions. But the directions need to be interperted! And that is the MLP, so each MLP interpretes each dir and based on some key it then selects the good directions/features... (A bit washy, need to think about that a bit more)

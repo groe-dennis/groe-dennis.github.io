@@ -72,3 +72,37 @@ we want the model to do small commits, but not actually commit them. and really 
 Lower layers, ie in cnns, seem to 'learn the right thing' ie generalize well. maybe its because for the lower structures there is just a lot more training data, ie in a dataset that are many more edges than there are noses. Can we test that in a little experiment? ie artificially generate datasets or only train on a few lower level features.
 But idk, it seems like for language we would never ever want to have "low level features". Like for vision its necessary to get into a space that has meaning, but language already is a space with meaning. So vision models and language models should be trained fundamentally different. 
 In vision models we do want to also use 'low-order' information, in language we would never want that. 
+
+# 
+What even are vectors? Numbers that are associated together. But the assiciation is arbitray? could also represent individually? But what about seeing them as directions? And matrixes are just vectors that have the additional component of how the vectors is represented? -> ie a matrix can be represented by a flattened vector and and some additional numbers that indicate how the numbers should be constructed spacially?
+
+# 
+Breakign everyting down in basic differences, or in bits basically seems to make a lot of things a lot easier.
+
+# 
+Optimal coding is just to go, and ask questions, and let questions be asked and iterate..?
+
+#
+Do MI on random networks... To see if they also have the geometries and also mhm or more nicely the idea that a random big model already has all necessary algos, they just need to be trimmed.
+
+#
+Difference between a 64 bit vector and two 32 bit floats: Both have the same number of bits and thus possible states. For the 2 floats however, most bits code for magnitude, only two for direction.
+Maybe llm thus encode a lot in the magnitue? so in superposition is not near orthogoal vectors, but also encoded in magnitude...?
+
+#
+Can we make the superposition more principled? by pre determininging clear clusters and then the model can assign a meaning to each cluster basically.
+
+#
+Have a look at simple algorithms like counting and how they can be represented if we keep the "llm have many features" view.
+
+#
+We can see a nn as mapping the whole space. (useful picture). In 2d basically there are regions in space that are covered by the training data. Then there are regions in space where we dont have training data, but the output is still clear. And then there are empty places in space, where we have wrong outputs and thus its like a fog of war.
+
+#
+Can LLMs reason in more than 2 dimensions? Or more easily than humans? Maybe the 2d bias helps us with certain tasks
+
+#
+Did ppl try pretraining only in RL? Probaly, can we do that for ARCAGI
+
+#
+Idea that res stream vector is the multi dim vector and that MLP is the interpreter, like subject object, or MLP is the "view"
