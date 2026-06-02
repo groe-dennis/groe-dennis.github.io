@@ -1401,7 +1401,206 @@ The facts are stored in the MLP. The MLP then basically is a giant lookup table,
 ## Their explanation (geometric)
 They see the emebdding as doing most of the work instead. The embedding has many directions, each of which code for a specific attribute, like "occupation" or "birthplace". Then during inference, when a attribute is asked like "born in", the MLP recognizes that and removes all attributes that do not match this question.
 
+## Results
+They provide evidence that for N persons with R Relations, d = O(R log N) sufficies. Each person is embedded as a superposition of its R relations. 
+O(R log N) because we have R relations
+
+For multihop queries, without CoT, either the embedding must get really large (All hop combinations present) or the MLP must get large ()
+
+For multihop queries with CoT, this does not apply, instead  d = O˜(R + k) suffices for any k-hop query. (: Alice → mother_of → [generates "Charlie"] → born_in → [predicts "Berlin"]) (+k Encoding the current position in the reasoning chain (which hop you are on), Distinguishing the different hops so the gating and selection still work reliably across the full sequence.)
+
+They empirically verify that the threshold emerges with GD (Models succeed around d = Θ(R log N), failing below it) and they do stuff like causal interventions to verify.
+
+Also they freeze a trained MLP swap to entirely new random bijections, and reinitialize subject embeddings to the new superpositions. The model achieves high accuracy without retraining the MLP — proving it learned a general relation-conditioned extractor, not specific fact pairs. (generic selector ("whatever is in block 1, give it to me when relation=born_in").)
+
+Also You can decode "Alice’s occupation" directly from Alice’s embedding with a simple linear probe. The information is already there in superposition.
 ## Ideas
 * General theme I observed now is the following view: An embedding in the res stream stores a number of features, and the MLP with the RELU then distentangles the Superposition and keeps only the relevant features.
 
 * Maybe a good view is that a embedding vector in the res is a superposition vector, ie many directions. But the directions need to be interperted! And that is the MLP, so each MLP interpretes each dir and based on some key it then selects the good directions/features... (A bit washy, need to think about that a bit more)
+
+# Do Sparse Autoencoders Capture Concept Manifolds?
+
+Traditional Linear Representation Hypoethesis (LRH) assumes concepts are represented as independet directions in activation space (clean vectors you can add and subtract).
+
+Recently is became evident that instead cncepts live on low-dim manifolds.
+
+Here they check if SAEs (which assume LRH) can still be useful to reveal the geometry (they are)
+
+## Gemoetric Note on Prior Negative Results for SAEs
+
+1. Across runs, the dictionary of SAEs differ. They say this is because each run makes a different tiling of the underlying geometry
+2. Steering features is often brittle. They say this is because the steering is done linearly, often pushing the activation then off the manifold
+3. Automated interpretability of SAE features is brittle. They argue that in isolation, the underlying object is missed thus inspecting linear directions is bound to fail
+
+(LRH only directions, geometry also takes distances between points into consideration)
+## Three ways SAEs can capture the geometry
+
+1. Shattering/Tiling: Each feature in the SAE corresponds to one point on the Manifold.
+(one SAE feature is one point on the manifold, they don't overlap and dont fire together)
+2. Compact Capture: The SAE features act as a coordinate system for the manifold
+(i.e. 3 features which linear span is the entire true manifold. The 3 features always fire)
+3. Dilution: Mixure between the first two, most common in practice.
+(Features 1-3 activate somewhat for low temps
+Features 2-5 activate for medium
+Features 4-8 activate for high
+Overlap is messy. Any point on the manifold activates 4–5 features, but different combinations.)
+
+-> Dilution helps explain why SAEs can feel simultaneously illuminating and unsatisfying. A single SAE direction may pick out a meaningful local region of a manifold, but the manifold itself is distributed across many such directions.
+
+## Representation as Additive Mixture of Manifolds
+In LRH each concept is a direction scaled by a coefficient. AMM generalizes this such that each concept is a manifold and thus a vector in the res stream is a sum/superposition of manifolds, or more specifically:
+$$\mathbf{x} = f_1(m_1) + f_2(m_2) + \dots + f_S(m_S) \quad \text{where } |S| \ll m$$
+Each $  f_i(m_i)  $ is a point on a smooth manifold $  M_i  $
+
+## Results
+Develops method to search for groups of features that collectively recover the full structure.
+
+Central observation: A SAE cpatures a manifold well, if a small set of features has a linear space to recover all points on the manifold and if the encoder selects this small group every time when a input that is on the manifold is given.
+
+* Difference of intrinsic dimension of the manifold and the dimension of the linear space it lives in: 
+* * A straight line (temperature) has intrinsic dimension $  d_i = 1  $, ambient dimension $  k_i = 1  $
+* * A circle (days of the week) has intrinsic dimension $  d_i = 1  $ (one angle parameter), but ambient dimension $  k_i = 2  $ (it needs 2D space: $  x = \cos\theta  $, $  y = \sin\theta  $).
+* * A helix or Swiss roll has intrinsic dimension $  d_i = 2  $ but often needs $  k_i = 3  $ to embed without self-intersection.
+
+When the number of features in the SAE is around k, that is optimal and compact capture occurs.
+When the number of features goes up, SAE is not restricted anymore and it can assign different features to different regions of the manifold, so tiling.
+
+(Tiling is observed in neuroscience)
+
+## Capture Manifolds from SAE (Ising Model inspired)
+The group of SAE features associated with a manifold needs to be identified. They use co-occurence, i.e. which features fire together or don't like to fire together.
+
+However, raw co-occurance confounds two (or even 3) sources of statistical dependence: 
+* a structural co-activation (atoms that span or tile the same manifold) (i.e. concept Monday and Tuesday for the "Days" Manifold)
+* b correlational co-occurrence (concepts that tend to appear together in the data)(i.e. concept Friday and relaxing for the "Days" manifold).
+* Universal features: Features that fire almost everywhere (they pollute raw correlations).
+
+They use Ising model inspired to distentangle that.
+
+First they binarize the SAE features.
+
+Then to filter out universal features, that is easy because they are captured by h, so will not be included in J.
+
+Next up they need to differentate a and b, so that they can find the concpets that are part of the manifold. 
+Consider the example Days of the Week, with Monday and Friday strongly negatively correlated and "relaxing" strongly correlated with strongly with Friday and strongly negatively with Monday. (fully connected 3 node graph)
+-> The Ising model when fitted disentangles this graph. 
+-> Basically, the model wants to find the easiest explanation. And as the relationship between "relaxing" and "Monday" can be explained because "Friday" and "relaxing" as well as "Monday" and "Friday" are strongly related, it removes the unneccassry edge from "relaxing" and "Monday"
+(Ising model asks, what can we learn about a pairwise relationship, if we have already fixed all other variables? If the fixed variables already explain the relationship well, we don't need a edge)
+
+
+Thus the have a cleaned weighted feature graph. Next, they use unsupervised clustering (such as the Louvain or Leiden algorithm, or Spectral Clustering) to detect communities. (In network science, a "community" is a cluster of nodes that have a high density of internal edges among themselves but very few edges pointing to the rest of the network.)
+
+-> The "Days" Clique: Because Monday, Tuesday, Wednesday, etc., all have strong structural links to one another (positively or negatively), the algorithm sees them as a tightly-knit, self-contained community. (This is then the "Week" Manifold)
+
+-> The "Relaxing" Node: Since "Relaxing" only has a single link pointing to Friday and zeros everywhere else, the community detection algorithm naturally leaves it out of the "Days" community.
+
+
+## Ising Model
+$p(\mathbf{s}) = \frac{1}{Z} \exp\left( \sum_{i<j} J_{ij} s_i s_j + \sum_i h_i s_i \right)$
+
+-> So this is a prob distrubtion that says "the probability of s (a specifc firing pattern of the SAE) is ..."
+
+* Disentangles interaction between individuals and overall forces
+
+* If J_ij for s_i,s_j is high, this means that if s_i is active, s_j will likely also be active and vice versa. h is the overall streght, like a bias
+
+* It is common in statistical physics to assume such a more complex distribution, fit it to data, but then only take the part that you want from it.
+
+* exp to turn the energy into a probability, lower energy becomes exponentially more probable, standard in the field.
+
+* It explains away the effect of universal features via the h_i fields (high h_i for features that fire a lot, but low J)
+
+* The formula above is the pairwise ising model. there are extension to k-th order like $E = -\frac{1}{6}\sum_{i,j,k} K_{ijk} S_i S_j S_k - \frac{1}{2}\sum_{i,j} J_{ij} S_i S_j - \sum_i h_i S_i$
+
+* Can think of ising as "after I account for/know all other features, is there still a relationship between two features?"
+
+* Ising model is based on local view: "This equation proves that if you want to predict the state of feature $i$, you only care about features where $J_{ij}$ is not zero. In graph theory, these are its immediate neighbors (called its Markov Blanket). If a feature is not an immediate neighbor, it completely vanishes from the equation."
+
+### Hauptsätze der Thermodynamik
+
+0. Hauptsatz: Zwei Systeme, die im Energieaustausch zueinander stehen, immer einen thermodynamischen Gleichgewichtszustand anstreben. Das heißt, dass sich die Zustände der Systeme in Bezug auf Temperatur, Druck und Volumen angleichen.
+
+1. Hauptsatz: Energie kann weder erschaffen noch vernichtet werden. Energie lässt sich nur in verschiedene Formen umwandeln oder übertragen. In einem geschlossenen System ist die Energie deshalb immer konstant.
+
+2. Hauptsatz: Übertragung von Arbeit in Wärme immer möglich, von Wärme in Arbeit allerdings nie zu 100%, dieser Prozess ist irreversibel
+Energieübertragung läuft immer nur vom warmen zum kalten Objekt
+-> Je höher die Entropie eines Systems ist, desto mehr Anordnungsmöglichkeiten der enthaltenen Teilchen gibt es. Energie fließt dabei immer nur in die Richtung, in der sie die Entropie erhöht. Entropie (das Maß für die Unordnung) in einem abgeschlossenen System bei spontanen Prozessen immer zu
+
+3. Hauptsatz: Ein Stoff kann nicht auf den absoluten Nullpunkt runtergekühlt werden (nur bei perfekten Kristallen mit unendlicher Ausdehnung möglich. Sobald die Gitterstruktur des Kristalls einen Fehler oder einen Bruch aufweisen würde, hätte ein Teilchen mehr Platz als die anderen. Damit wäre auch seine Entropie größer.)
+
+
+### Ising Model Phase transitions
+
+* Every thermodynamic system tries to minimize: $$F = E - TS$$, Helmholtz Free Energy equation, E is the internal Energy T is Temperature, S Entropy 
+Erklärung:
+-> Minimierung der Helmholtz Energie ist äquivalent mit der Maximierung der Gesamtentropie des Universums (2. Hauptsatz der Thermodynamik)
+
+By changing the temperature ($T$), we tilt the scales of this tug-of-war. The Ising model reveals three distinct regimes:
+
+1. Low Temperature ($T < T_c$): The Ordered Phase (Ferromagnet): Random thermal shaking (TS) is low, E wins. (If a few elements flip, they get flipped back into order by their neighbours)
+2. High Temperature ($T > T_c$): The Disordered Phase (Paramagnet): Spins flip wildly and randomly. Even if a small cluster of spins tries to align, the thermal noise immediately tears them apart. Up and down cancels out
+3. The Critical Point ($T = T_c$): The Phase Transition: Here Energy and Entropy are perfectly balanced. It becomes hyper-sensitive, exhibiting spectacular properties: 
+    * Long-Range Correlations: A spin flipped on one side of the material can instantly influence a spin on the exact opposite side, spanning macroscopically large distances.
+    * Fractal Spin Clusters: If you look at the grid, you will see clusters of aligned spins of every single size scale—from a tiny cluster of 3 atoms to a massive continent of millions of atoms. If you zoom in on a cluster, it looks structurally identical to the whole system (scale invariance).
+
+## Ideas
+* What other representiational ideas are there other thatn Additivatve Mixture of Manifolds and LRH (what other generalizations)
+
+* I think the difference between intrinsic dimension and ambient dimension is quite interesting. What is optimal from a NN sense? like what generalizes best, both low or low intrinsic but high ambient? etc
+
+* k-th order ising model explodes in paramter size and also is similar to taylor expansion imo. can we use that to model llms? like maybe the more paramters a llm has, the higher k-th order ising model it can represent
+
+* -> or can we restrict a model such that it only has orders of idk 4 and 5 but not 2? is that maybe how nn work? can we skip lower level associations such that we only get the higher order ones that are more like reasoning? 
+
+* Can we just treat the res stream as binary numbers, and run the Ising model on that?
+
+* To bypass SAE, use Mapper algorithm, Geodesic Manifold Learning (geodesic distance—the shortest path between points only by traveling along the data graph), Pullback Geometry, Local Intrinsic Dimensionality (LID) Profiling, https://gemini.google.com/app/a9597c1e6fe1949f?hl=de 
+
+### Ising
+
+* Ising method interesting for generalization? Seperated spurious from real?
+
+* There are other methods that generlalize correlation (Partial Correlation, Conditional Mutual Information, PC Algorithm)
+
+* Ising method explains phase transitions?
+
+* Hopfiled networks, neural populations, protein folding, Restricted Boltzman Machines
+
+* Dynamic ising with time evolution
+
+* Its not a causal method. Why not?
+
+* Ising model assumes conditional-independece assumption, if you doubt that the results might be misleading
+
+* For Gaussian data, a common “fix” is to use the precision matrix / inverse covariance, because zeros there encode conditional independence
+
+* Criticallity in the brain predicted by ising? (Criticality is the edgge between order and chaos and allows for optimal processing)
+
+* Even with pairwise ising, strong collective effects can emerge
+
+* Energy landscape view of brain states: The Ising energy function defines a “landscape” of possible activity patterns. The brain’s dynamics can be seen as wandering on this landscape — with attractors corresponding to different perceptual, cognitive, or behavioral states.
+
+* Heising defines a energy function, so it gives each possible state a energy
+-> Concepts like attractors (basins) or basin jumping can be looked at
+-> real brain often has a few deep, wide basins that dominate activity, but system can switch between them (Metastability, realtively stable yet still flexible)
+
+* Muli-layer ising models (still only one timestep), hirachical ising models (not just connection between neurons but also groups of neurons etc)
+
+* Restricted Boltzman Machines introduce hidden neurons that are connected to the observed neurons. This makes it easier for higher order interactions to emerge
+
+## More on Ising
+
+* Adheres to maximum entropy principle (Maximizing entropy ensures that no additional structure is imposed beyond the stated constraints. Any lower-entropy alternative would encode extra regularity not required by those constraints and would therefore amount to introducing unsupported information.)
+
+
+# Deep Boltzmann Machine
+
+## Energy
+Defines a energy function for all possible states -> Scalar. Chosen is such a way that sampling later becomes tracktable.
+* The form comes directly from the Ising model and Boltzmann distribution in physics. Each term -x^T W y represents the interaction energy between two groups of binary variables (like spins in a magnet).
+It is quadratic (bilinear)
+## Sampling
+Gibbs sampling then used to do inference, start with a v0 and then do a number of steps. Gibbs sampling is a smart way to not have to calcualte a really complicated calculation
+## Training
+use real data and made up data and then do a contrastive loss.

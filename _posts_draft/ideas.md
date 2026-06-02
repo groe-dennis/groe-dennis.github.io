@@ -106,3 +106,65 @@ Did ppl try pretraining only in RL? Probaly, can we do that for ARCAGI
 
 #
 Idea that res stream vector is the multi dim vector and that MLP is the interpreter, like subject object, or MLP is the "view"
+
+#
+What about we do a training (like in the paper where they discovery many interpretations for MI), where we train a model and then train the next model to also solve the task, but be representationally as far a way as possible from the next model and so on. Will we eventually hit a model that solves it perfectly?
+
+-> or take an already trained model and discover all the sheafs: https://arxiv.org/pdf/2605.12671
+
+#
+Is shortcut learning always maybe that the solution actually requires multi-step reasoning, but the model with GD finds solutions that are only one or a few steps?
+Design a architecture, where the model finds multi step more easily. 
+
+#
+Look more into causal methods https://grok.com/c/e41945a4-292c-4d78-9bb4-9a352cc171ba?rid=63e90617-d7ef-4bba-a9b1-a3470ad96a4e
+
+#
+Train a llm on ARC, but make the activation space really small, like 4 binary or smth, so it still learns. Then this network can be studied a lot easier...
+
+#
+Ising model, how about we model a MLP like that and then during inference just use J
+Generally, maybe assume better distributions and then just use part of it
+
+#
+General theme: Instead of assuming a distrubtion, fitting it to data and then taking the distribution we can
+Assume a distribution, train it on data, but then only take some part of the distribution for prediction.
+
+#
+Overview of all generalizations/fixes of correlation. Normal nn does correlation? so what are improvements
+
+#
+General theme from the ising thing: We have a observation (correlation) but what we actually care about is only a teilmenge of the correlations, so we need to find a way to disentangle
+
+#
+Decision Tree learning is also greedy and does not guarantee the simplest tree. Seems closely related to NN learning. But maybe with decision trees we can learn smth that can then translate to NN learning.
+Also, what is the equivalent of the transformer architekutre for decision trees?
+
+#
+When we have a lot of training examples, it seems that we can converge to the correct solution with wd. But with little amount of data we can not, we dont find the solution that has the lowest norm. So with more data we dont get stuck in a local minimum and instead can converge to lowest norm. 
+Can we thus instead create artificial training points and create them in such a manner such that the model will converge to the lowest norm? So optimizing for lowest norm kinda. Or optimize inits...
+
+# 
+Can we train both generalizing and non-generlaizing model and then test approaches to elicit the generalizing model from the non-generalizing one?
+
+#
+Automated research, but restrict the researcher to a very limited set of actions
+
+#
+StepByStep trains for one specific algo. Can we then train a second model that also solves, but in a different way than the first one?
+
+#
+When we train on one (or a few) examples, we will get some generlaizing behavior and some that is spurious. Can we then use the 2nd example to test and everything that does not work out, we delete from the model and try something new? 
+
+#
+To seperate the algorithmic step from what alagorithmic step to take, have k layers but do n forward passes, at each step a model decides which next step is chosen.
+
+#
+Can we learn a model step by step in the sense that we start with a very small model, heavily quantized etc and let it learn until convergence. here we would expect train-test loss to be the same. Then, we can start with the representations of this first model and train another small model. Etc, each one brings us closer to the real data.
+
+#
+Can we take train-test divergence as a extra loss term?
+
+#
+"To understand the transition, we look at the Helmholtz Free Energy equation, which every thermodynamic system tries to minimize:$$F = E - TS$$"... "The magic happens at one precise mathematical boundary: the Critical Temperature ($T_c$). Here, Energy and Entropy are perfectly balanced.At this exact tipping point, the system experiences a phase transition. It becomes hyper-sensitive, exhibiting spectacular properties:"
+-> Very much like in meditation, "the middle way"...
