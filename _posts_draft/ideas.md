@@ -168,3 +168,16 @@ Can we take train-test divergence as a extra loss term?
 #
 "To understand the transition, we look at the Helmholtz Free Energy equation, which every thermodynamic system tries to minimize:$$F = E - TS$$"... "The magic happens at one precise mathematical boundary: the Critical Temperature ($T_c$). Here, Energy and Entropy are perfectly balanced.At this exact tipping point, the system experiences a phase transition. It becomes hyper-sensitive, exhibiting spectacular properties:"
 -> Very much like in meditation, "the middle way"...
+
+#
+Train a model on a idk math benchmark, once normally and once with thinking only in image tokens.
+
+#
+Read https://en.wikipedia.org/wiki/The_Book_of_Why The book of why
+
+#
+So in echo state networks we can use computation from a random network, and then only training a linear layer is needed.
+Can we instead capture compute from arbitrary physical processes?
+Like can we have lava lamps and use them as our black box?
+Can we record stock market movement and use that?...
+(thinking how, according to wolfram, the universe is a computer)

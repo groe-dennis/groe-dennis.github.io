@@ -1541,9 +1541,37 @@ By changing the temperature ($T$), we tilt the scales of this tug-of-war. The Is
 1. Low Temperature ($T < T_c$): The Ordered Phase (Ferromagnet): Random thermal shaking (TS) is low, E wins. (If a few elements flip, they get flipped back into order by their neighbours)
 2. High Temperature ($T > T_c$): The Disordered Phase (Paramagnet): Spins flip wildly and randomly. Even if a small cluster of spins tries to align, the thermal noise immediately tears them apart. Up and down cancels out
 3. The Critical Point ($T = T_c$): The Phase Transition: Here Energy and Entropy are perfectly balanced. It becomes hyper-sensitive, exhibiting spectacular properties: 
-    * Long-Range Correlations: A spin flipped on one side of the material can instantly influence a spin on the exact opposite side, spanning macroscopically large distances.
+    * Long-Range Correlations: A spin flipped on one side of the material can instantly influence a spin on the exact opposite side, spanning macroscopically large distances. (Infinite Correlation Lenght, ripple effect) 
     * Fractal Spin Clusters: If you look at the grid, you will see clusters of aligned spins of every single size scale—from a tiny cluster of 3 atoms to a massive continent of millions of atoms. If you zoom in on a cluster, it looks structurally identical to the whole system (scale invariance).
 
+Tc is determined by the strenght of the interactions between elements (ie J), The number of neighbours, and the spatial dimension d of the network 
+    * For 1-D (Chain) Tc=0: (boundries can not be flipped back)
+    * For 2D (Grid) $k_B T_c \approx 2.27J$
+    * For 3D (Cube) ($k_B T_c \approx 4.51J$)
+
+### Critical Brain Hypothesis
+* In neuroscience, evidence suggests that the healthy human brain operates right at a critical state.
+
+* If the brain is too cold ($T < T_c$), it is too rigid—neurons lock into repetitive patterns (like an epileptic seizure), and it cannot process complex information.
+
+* If the brain is too hot ($T > T_c$), it is pure white noise and chaos—neurons fire randomly, and no thoughts can form.
+
+* At $T_c$, the brain achieves maximum information storage, a massive dynamic range to process inputs, and the ability to instantly adapt to new stimuli. Neuronal "avalanches" cascade across the brain at all scales.
+
+* Studies tracking sleep deprivation and anesthesia show that as you get tired, or as drugs take effect, the brain drifts significantly away from the critical state into a sub-critical (overly ordered/sluggish) regime.
+
+### Relationship to Buddhism of Criticality
+* Criticality is the literal mathematical realization of the Middle Way. It avoids the dead rigidity of the frozen crystal state (Eternalism/Dogmatism) and the meaningless white noise of the gaseous state (Nihilism/Chaos).
+
+* Interdependence (Pratītyasamutpāda): Buddhism asserts that nothing exists in isolation; all things arise in dependence upon multiple causes and conditions. At $T_c$, the "Infinite Correlation Length" mirrors this perfectly. Separations blur. You can no longer describe the behavior of Atom A without describing the entire network. Every part of the system becomes intimately and causally woven into every other part.
+
+* Impermanence (Anicca) and Emptiness (Śūnyatā)
+At the critical point, macroscopic structures (massive clusters of aligned spins) constantly form, dissolve, and reform in a split second. If you point to a cluster of "order" and say "there it is," it has already dissolved into chaos, only to emerge somewhere else.
+The structures have no permanent, inherent essence—they are "empty" of independent existence, yet they form the vibrant, ever-shifting reality of the system.
+
+
+
+x
 ## Ideas
 * What other representiational ideas are there other thatn Additivatve Mixture of Manifolds and LRH (what other generalizations)
 
@@ -1563,8 +1591,6 @@ By changing the temperature ($T$), we tilt the scales of this tug-of-war. The Is
 
 * There are other methods that generlalize correlation (Partial Correlation, Conditional Mutual Information, PC Algorithm)
 
-* Ising method explains phase transitions?
-
 * Hopfiled networks, neural populations, protein folding, Restricted Boltzman Machines
 
 * Dynamic ising with time evolution
@@ -1575,13 +1601,11 @@ By changing the temperature ($T$), we tilt the scales of this tug-of-war. The Is
 
 * For Gaussian data, a common “fix” is to use the precision matrix / inverse covariance, because zeros there encode conditional independence
 
-* Criticallity in the brain predicted by ising? (Criticality is the edgge between order and chaos and allows for optimal processing)
-
 * Even with pairwise ising, strong collective effects can emerge
 
 * Energy landscape view of brain states: The Ising energy function defines a “landscape” of possible activity patterns. The brain’s dynamics can be seen as wandering on this landscape — with attractors corresponding to different perceptual, cognitive, or behavioral states.
 
-* Heising defines a energy function, so it gives each possible state a energy
+* Ising defines a energy function, so it gives each possible state a energy
 -> Concepts like attractors (basins) or basin jumping can be looked at
 -> real brain often has a few deep, wide basins that dominate activity, but system can switch between them (Metastability, realtively stable yet still flexible)
 
@@ -1604,3 +1628,102 @@ It is quadratic (bilinear)
 Gibbs sampling then used to do inference, start with a v0 and then do a number of steps. Gibbs sampling is a smart way to not have to calcualte a really complicated calculation
 ## Training
 use real data and made up data and then do a contrastive loss.
+
+# Meditative absorption shifts brain dynamics toward criticality
+Researchers tracked highly experienced meditators during a 10-day retreat using EEG to measure complex signal dynamics like Lempel-Ziv complexity, sample entropy, and chaotic Lyapunov exponents. They compared standard mindfulness of breathing to deep, refined states of meditative absorption known in Buddhism as the Jhānas.  The Finding: The paper demonstrated that entering deep Jhāna states causes a massive, volitional shift toward a metastable, near-critical regime. As the meditators slipped into deep absorption, their brains exhibited minimized chaoticity alongside maximum neural signal diversity.
+
+# Meditation Can Reshape Your Brain Activity
+This study used high-resolution Magnetoencephalography (MEG) and machine learning to scan the brains of 12 Tibetan Buddhist monks at an Italian monastery.
+
+Vipassana pushed the monks’ brains directly into the sweet spot of brain criticality. By widening the "flashlight beam" of awareness, the brain achieved a state of hyper-flexibility, becoming perfectly poised to process incoming information without getting stuck.  
+
+Samatha, on the other hand, actually distanced the brain from the critical tipping point. By narrowing focus down to a single point, it suppressed chaotic fluctuations, pulling the brain into a deeply stable, sub-critical state of internal quietude.  
+
+# Simulated Annealing Algorithm
+Exploration: The algorithm starts at a high temperature, randomly trying new solutions.
+Escaping Traps: It accepts worse choices early on to avoid getting stuck in local dead ends.
+Exploitation: As the temperature drops, it focuses strictly on refining the best overall solution.
+
+* To guarantee you find the global minimum, the temperature $T$ at step $t$ must be lowered incredibly slowly, following a logarithmic decay (means that number of steps required grows exponentially)
+
+# Chaotic Lyapunov Exponent: The Butterfly Effect Metric
+
+Imagine tracing a single path of brain activity through time. Now imagine a second path that starts almost exactly in the same spot, separated by just a microscopic nudge. The Lyapunov Exponent calculates how fast those two paths diverge from each other.
+
+The Logic: * If $\lambda$ is negative, the two paths will quickly slam back together. The system is highly stable, rigid, and dampens all disturbances.If $\lambda$ is positive, the two paths will violently spiral away from each other exponentially fast. This is the Butterfly Effect—a tiny change at the start leads to a completely different future state.
+
+$\lambda$=0 is the defintion of criticallity
+
+# PC Algorithm
+Start with a complete graph between all variable.
+
+1. The Skeleton Phase: Iteratively removes edges between variables if they are found to be independent given a subset of other variables. (i.e. test of given X, Z and Y are still correlated. If not, remove the edge: $Y \perp Z \mid X$.)
+
+2. The Orientation Phase (Assigning Cause and Effect): Analyzes specific shapes within the skeleton (like "V-structures" or colliders) to determine the direction of the edges. Applies a set of logical rules (such as the Meek rules) to orient the remaining edges without creating cyclic paradoxes
+
+## Compared to Ising
+Directed vs. Undirected
+Binary vs. can be binary but also continous
+
+Discovering the skeleton of a binary network using conditional independence tests is mathematically equivalent to Ising Model Selection (PC then goes a step further)
+
+
+
+
+# Exploratory Causal Analysis (Causal Discovery)
+Focuses on extracting the underlying cause-and-effect mechanisms from observational data. Unlike traditional machine learning—which maps correlations—ECA determines why variables interact and can predict the outcomes of unseen interventions.
+
+The ultimate goal of ECA is to map relationships into a Directed Acyclic Graph (DAG), where nodes represent variables and arrows represent the direction of causality (e.g., \(X \to Y\), meaning X causes Y)
+
+## Constraint-Based Algorithms
+
+It begins with a fully connected network and systematically "prunes" or deletes edges if two variables are found to be independent given a set of other variables. (Note: seems quite related to ising)
+
+
+Common Algorithms: PC Algorithm (Peter-Clark) and FCI (Fast Causal Inference)(extension to PC, includes potential hidden cofounder that is not measured) for cases with unobserved confounders.
+
+## Score-Based Algorithms
+
+These algorithms treat causal discovery as an optimization problem.
+
+They define a mathematical scoring function (e.g., Bayesian Information Criterion) to evaluate how well a hypothetical DAG fits the observed data. The algorithm then performs a heuristic search (greedy search) to find the graph that maximizes the score.
+
+Best for: Scaling causal discovery up to high-dimensional datasets while ensuring the final graph structure is stable and mathematically sound.
+
+## Asymmetry / Functional Causal Model-Based Algorithms
+
+These algorithms look past simple conditional independence by exploiting the asymmetry between cause and effect
+
+By analyzing the distribution of the data and its error (noise), the algorithm determines which direction fits the physical reality (e.g., distinguishing between \(X \to Y\) vs \(Y \to X\)).
+(LiNGAM (Linear Non-Gaussian Acyclic Model) and ANM (Additive Noise Model).)
+
+## Hybrid Algorithms
+These combine the strengths of both constraint-based and score-based methods
+
+They typically use a constraint-based approach to narrow down the search space (creating a skeleton of the graph) and then apply score-based metrics to find the best possible causal directions.
+
+Common Algorithms: MMHC (Max-Min Hill-Climbing) and SADA.
+
+
+# Linear Causal Representation Learning by Topological Ordering, Pruning, and Disentanglement
+tackles a difficult problem in machine learning called causal representation learning (CRL). The goal is to discover the hidden causal factors that generate observed data.
+
+Develop a CRL method and then they also apply it to an LLM. On its activations. Early research.
+
+# https://towardsdatascience.com/causality-an-introduction-f8a3f6ac4c4a/
+
+Need for causality, not just correlation
+
+A key distinction is:
+
+Correlation is symmetric: if X is correlated with Y, then Y is correlated with X.
+Causation is directional: if X causes Y, changing X can change Y, but changing Y does not necessarily change X.
+
+## Structural Causal Models (SCMs)
+
+Pearl's framework represents causality using Structural Causal Models, which consist of:
+
+Directed Acyclic Graphs (DAGs) — diagrams where arrows represent causal influences.
+Structural Equation Models (SEMs) — equations describing how variables generate one another.
+
+A Structural Equation Model (SEM) is a collection of equations that represent the causal mechanisms generating a system: X i ​ =f i ​ (causes of X i ​ ,U i ​ )
