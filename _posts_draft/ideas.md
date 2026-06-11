@@ -181,3 +181,39 @@ Can we instead capture compute from arbitrary physical processes?
 Like can we have lava lamps and use them as our black box?
 Can we record stock market movement and use that?...
 (thinking how, according to wolfram, the universe is a computer)
+
+#
+Okay, so computing with physical processes is a thing already, called reservoir computing. But they are limited to systems, where we can input and output smth. This is a big restrictions.
+Could we instead work with just a video of a process, like a video of a wood? Where a model can, like a expert, send to a specific frame in the video, and then the output would be the next frame (or the next few frames or smth)
+-> isnt this like what llms already do? like if we see text as the physical process. But could we make a llm that maps to a sentence in the training data?
+-> the lookup on the tree video would be similar to just calculating another matrix... mhm can we just have lookup tables inside a llm? skiping layers entierly? I think thats also a established idea? but maybe in a looped form, like input, then lookup then output this in a loop
+
+-> can we use random network once, and run it with every possible input? and then we can put that in a db instead of needing to run it every time. Basically we amoritze costs.
+
+-> or like basically we take a trained model and we record its output for n inputs. Then for a new input we can kinda do it like skip connections, where we only need to learn the part that is not yet recorded.
+#
+Have n llm each representing one paper. then open a group chat, every time a model has smth interesting to say, it will join the conversation...
+should be possible with small models actually.
+
+# 
+Learning is best if you start with what you already know and then introduce a new atom of knowledge by contrasting it with the known to see where its different
+
+#
+Maybe what I do here is quite nice in the sense that I only commit stuff that I understand. And this can be used as a LLM knowledge base. This might be a good extension of brain as I can query the llm then. What would be bad is to commit stuff I dont understand. 
+Similar to how the brain works? I mean I don't rememeber everything all the time anyway, so when a prompt is given I can either go to external or internal memory, but no matter where the information then comes from, I will be able to understand it and use it skillfully.
+
+#
+What even ist regularization philosophically? Is it there to be able to compare between instances? probably also something deeper related to nn
+
+#
+Learning stuff, the highest ROI might not be knowing stuff oder understaning it, but to get the context in which the stuff came up and to get what the ableitungen to other knowledge is. To make it actionable. Maybe this can be modeled with a programmatic function, maybe its good iff it helps you do/learn other stuff.
+
+#
+RL training should have a back-questions part implemented and simulated by giving questions that are ambigious, but a oracle llm has access to them.
+
+#
+Can we reframe GD as Multi-armed-bandit?
+
+#
+Okay so we know from Matroids that if the Zwischenschritte of an algorithm are all independent, that the greedy algo of just taking the lowest loss works. GD imo can be seen as a greedy algorithm. Large vectorspaces have many vectors that are almost independent. Research shows that minima in NN are connected by simple curves where the loss stays low and flat minima are often prefered. 
+Now Matroids greedy algo classically are like find a basis with minimum weight, 

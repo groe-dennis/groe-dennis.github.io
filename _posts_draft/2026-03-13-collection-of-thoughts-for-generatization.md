@@ -1727,3 +1727,9 @@ Directed Acyclic Graphs (DAGs) — diagrams where arrows represent causal influe
 Structural Equation Models (SEMs) — equations describing how variables generate one another.
 
 A Structural Equation Model (SEM) is a collection of equations that represent the causal mechanisms generating a system: X i ​ =f i ​ (causes of X i ​ ,U i ​ )
+
+# The Neural Compiler: Program-to-Network Translation for Hybrid Scientific Machine Learning
+
+For physics nn modeling. They have data and want to determine a paramter in a function with that. But they dont just want a nn, that has to learn everything in its weights and is not rly interpretable. Instead they already have a function and just want to learn a speciic part of the function.
+
+To do so they take the function, compile it into a pytorch model and then train that model.

@@ -184,6 +184,102 @@ The total number of neurons scales roughly with the number of “input sensors�
 
 * Or with more working memory more deeply nested phrases
 
+* Brains seem to be of the kind "single thread of decisions from sensory input". This is opposed to systems generally seen in nature, that don't have the single stream constraint. 
+
+* Principle of Computational Equivalence says it’s easy to have a system that can deal with arbitrary computation. It’s just that such a system is not “brain like” in its behavior; it’s more like a typical system we see in nature.
+
+* Another generlaization could be to make the stream parallel instead, effectively enabling a "graph of thinking"
+
+* He imagines communcation via images and not the single stream. I don't quite understand, but maybe bc images are parallel pixels. He says gestures and body language could be a way to communicate in pixels
+
+## Sensors and Actuators
+
+* We compress a lot of of the sensor data, based on what we needed for survial
+
+* In our digital era though we could perhaps use a lot more features
+
+* We could even transform stuff like fluid motion into pictures and then develop features for exactly that. Maybe here concepts like subject and object would even not be neccessary anymore...
+
+* Also we could connect different actuators (For example, while humans can control helicopters, they never managed to control quadcopters—at least not until digital flight controllers could do most of the work. )
+
+* Animal can only sense stuff where they are. One could imagine however a distributed, like a IoT, network so you get brain input from all over the world/universe
+
+* Or chaning the timescale of input (at a million times faster, we could detect individual photons, we might be able to detect quantum stuff)
+
+## Abstraction
+
+* The more abstractly we try to think, the harder it seems to get. But would it get easier if we had bigger brains? And might there perhaps be fundamentally higher levels of abstraction that we could reach—but only if we had bigger brains.
+
+* One abstraction occurs when we notice a set of things being similar, then they can be "packaged up" in a word
+-> Abstractions/concepts/ideas can be self-reinforcing, such as with the concept blog. As soon as the concept exists its easier to think about and we tend to see it more and more in the world
+
+-> But what really makes abstraction take off is when we start building a whole tower of it, with one abstract concept recursively being based on others.
+
+* Abstractions define a concept independent of underlying objects, such as measurements of weight independent on what is weighted (figs or wool etc)
+
+* Some concepts you can only explain by going up the tower of abstraction. Some seemingly abstract concepts can however be explained well from "raw experiential concepts"
+-> However, when explaining abstract things, one can do that by analogy to more familiar, concrete things
+
+* One can see abstract concepts as a reflection of pockets of reducablity, "jumping ahead" without having to explain everything from the ground up
+
+* ruliad can be seen as the  entangled limit of all possible computations, but it can also be seen as the limit of all possible abstractions
+-> he argues that it’s because brains are the way they are that we perceive the laws of physics that we perceive.
+
+* For bigger brains, if they are not fundamently different, the same thing would apply. Because for the core laws of physics, only two properties of the observer are important: First, that they’re computationally bounded. And second, that they believe they are persistent in time, and have a single thread of experience through time
+
+"Would this be different with bigger brains? Perhaps a little. But anything that something brain-like can do pales in comparison to the computational irreducibility that exists in the ruliad and in the natural world. Nevertheless, with every new pocket of computational reducibility that’s reached we get some new abstraction about the world, or in effect, some new law about how the world works."
+
+* He asks if reaching higher levels of abstraction is a matter of education, and to what extent it requires additional intrinsic capabilities of a brain. He suspects both, Sometimes it’s really just a question of knowing “where that pocket of reducibility is”. But sometimes it’s a question of navigating a network of pockets, which may only be possible when brains reach a certain level of “computational ability”.
+
+* Our brains are incapabale of storing all the information of our civilization. Bigger brains however could do that
+-> They could then make "grand analogies" from different branches of knowledge (he made one from special relativity to biology)
+
+
+## Computational Language
+
+"In some sense, human language tends to “work with data”, applying a simple analog of code to it. Our computational language can “work with code” as “raw material”."
+(human language is working with concrete objects, in computers we can work with functions as objects)
+
+In the wolfram language, everything, including objects, actions, etc. are symbolic expressions
+
+-> There is no need to use names, everyting can be defined by its interaction bascially (combinators in math)
+-> Combinators have been around for more than a century. But they are almost impenetrably difficult for most humans to understand (Somehow they involve too much “pure abstraction”, not anchored to concepts we “have a sense of” in our brains.)
+
+When people learn it it takes time, After one groks one level of abstraction, that seems to have to “settle” for a while before one can go on to the next one.
+
+-> He suspects having a bigger brain could speed this up, but unlikely (as as soon as one goes to far out, one ends up with a brain that is irreducable and thus can not useful (or smth like that))
+
+"One of the core features of the Wolfram Language is that it represents everything as a symbolic expression. And, yes, symbolic expressions are formally able to represent any kind of computational structure. But beyond that, the important point is that they’re somehow set up to be a match for how brains work. (https://www.wolframscience.com/nks/p620--human-thinking/)"
+
+
+* symbolic expressions can be thought of “grammatically” as consisting of nested functions that form a tree-like structure; effectively a more precise version of the typical kind of grammar that we find in human language
+
+
+# Wolfram Language
+It is based on symbolic expressions
+
+In python, you mostly care about the result of a function. Even when you pass a function as a argument, you still don't know the internals of the function.
+
+in wolfram, a function however is a symbolic expression (a tree). Other functions can manipulate the tree. This is usefull i.e. to take the derivative of f(x) = x² + 1, wolfram represents it as 
+Add(
+    Power(x,2),
+    1
+)
+And this allows the differentiation function to apply rules like 
+d(x²)/dx -> 2x
+d(constant)/dx -> 0
+
+* In python you could get those symbolic expression stuff by
+'''
+import inspect
+
+source = inspect.getsource(square)
+'''
+
+Then one is working with the source text itself, not just the evaluated argument of the function.
+
+So wolfram is able to rewrite the the parsed representation of the program
+
 # Ideas
 Looks very much akin to contemplative structures
 
@@ -199,3 +295,21 @@ Looks very much akin to contemplative structures
 * If concepts are language and llms have concepts interanlly, what is the equivalent inside a llm of verbs, adjectives, nouns, grammer, tenses, subject-object etc. Like maybe we can see a llm activations as a stream of non-linear language
 
 * In programming langues one can not only pass variables, but also pass functions. How would that work in a llm?
+
+* Wait ok body language communication as more efficient? we have that and the interpretation is called "intuition". So basically we have the thread to thread communication of words but we also already have the "graph" communication that he eludes to via body language etc. This goes more of less directly from concept space in one brain to another, skipping the requirements of single threaded communication...
+-> maybe that is also related to communicating in functions not in concepts, point above (ie a image can be represented as a function or smth)
+
+* Another feature of larger brains? : faster learning, more adaptivity, even more than we do for a digital era
+
+* is there a fundamental difference between object/concept and function? is a object the easiest function?
+
+* Maybe there is a difference between defining a function as a function of functions and then executing that function? Ie actually in llm research we would like to learn the code in the sense of a subroute thread, and then at a seperate step we would execute and evaluate that function. Somehow like we seperate training and inference...
+Can we make this seperation more explict in the architecture design?
+Like the reasoning is this, but a bit ad hoc on top isntead of proper function chaining maybe
+
+* If I understand correctly, Wolfram language only has functions and not objects themselves. So everything is defined as a doing, very similar to what the contemplative tradition says
+
+* "rewriting the parsed representation of the program" Wolfram, this is bascially also what a llm is doing when coding?
+
+* The shift between python - wolfram. I imagine nn as python-like. are there wolfram-like neural network architectures?
+What can Wolfram stlye language tell us about neural network interpretability?
