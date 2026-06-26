@@ -216,4 +216,58 @@ Can we reframe GD as Multi-armed-bandit?
 
 #
 Okay so we know from Matroids that if the Zwischenschritte of an algorithm are all independent, that the greedy algo of just taking the lowest loss works. GD imo can be seen as a greedy algorithm. Large vectorspaces have many vectors that are almost independent. Research shows that minima in NN are connected by simple curves where the loss stays low and flat minima are often prefered. 
-Now Matroids greedy algo classically are like find a basis with minimum weight, 
+Now Matroids greedy algo classically are like find a basis with minimum weight, and the greedy algo is to just pick new independent ones and always the lowest one remaining. 
+If we change the objective of GD from finding the weight with minimal loss to finding the minimum over all seen weights (if we assume they are independet, finding the basis), then we have the same setup and we know that GD is optimal in as sense, and bc larger networks are more likely independent that would explain smt.
+But also if we optimize all seen weights, that is more like finding a low loss basin, corresponding to good generalization?
+
+-> now next to theory, can we make smth with that? can we make the seen weights optimize for independence or smth etc
+* 
+
+0ter Punkt
+Wir nehmen an wir haben größen Lösungsraum. In dem gibt es viele perfekte Lösungen. Wenn wir aber in diesem Raum Greedy suchen, kommen wir nicht an die beste Lösung
+Stattdessen schränken wir den Lösungsraum ein. In dem eingeschränktem Lösungsraum gibt es immer noch viele perfekte Lösungen. Aber in diesem Lösungsraum, (zB wegen Matroid eigenschaft) ist ein greedy algorithmus (zB gradient descent quasi) optimal.
+
+Ein größeres Modell schränkt deswegen den Lösungsraum ein, weil jeder schritt quasi unabhängige weights findet. Also die Weight historie ist ein orthogonalsystem. 
+
+Okay also erster Punkt: Vielleicht wollen wir nicht einfach nur die besten weights, sonder wir wollen das beste "basin" finden. D.h. eine Menge an weights, alle mit einem gradient Schritt verbunden, die zusammen den geringsten loss haben. Das würde für die Theorie sprechen mit dem flat loss regions die durch einfache kurven verbunden sind.
+
+Zweiter Punkt von der Matroid theorie: 
+
+Also wir haben einen großen Lösungsraum, es gibt viele Lösungen die perfekten loss haben (gehe davon aus das perfekter loss mit regularizer auch perfekt generalisiert)
+
+Größere Modelle haben in ihrem Lösungsraum auch den Lösungsraum kleinerer Modelle, also alle funktionen die kleine modelle abbilden können, können auch größere.
+Angenommen auch kleinere Modelle haben perfekt generalisierende Lösung, aber wird nicht gefunden.
+
+Wenn wir einen greedy algorithmus jetzt auf dem 
+
+# 
+Unterschied "simpleste lösung" vs "den besten/simplesten schritt von einer ausgangslage machen" - unterschied occams razor vs wie den menschen häufig falsch verstehen
+
+#
+Annahme: Die eigentliche Intelligenz des models liegt im base model, post training erklärt dann nur noch welches verhalten man haben möchte (vlt nur teilweise so)
+Aber kann man dann irgendwie die Kraft eines Base models nutzen und in die Bahnen eines Posttrained models tun? Also das Postrained model vlt quasi als einschränkung in der Antwort sehen, aber innerhalb der Einschränkung darf das base model frei entscheiden? udn dann könnte man viele basemodel miteinander verbinden oder so?
+
+#
+"Intelligence becomes most apparent under restrictions" -> Kann man das für LLM training benutzen indem man irgendwie den Lösungsraum einschränkt
+
+#
+Can we train on arc and then generate more input output examples. with those more we then train a new model and check how well it performs on the real data. use that as a signal.
+bascially, we test how well the model has approximated the rule, by letting the rule be found out by a data learner. 
+
+#
+Maybe we can look at text data as a result of a large number of functions.
+Like if we were to run a codebase for a while we would get a loot of logs and thus that would be like the data we see...
+
+-> eval gives logs and makes the llm reproduce the codebase...
+-> if training gets the correct rules, the codebase will be reconstructed and thus perfect generalization
+(maybe some kind of reflection problem here do we just want the model to be a codebase or a model that can reconstruct codebases...)
+
+#
+Can we have a model that outputs the weights of a model (maybe compressed, but we do want it compressed anyway), like it ouptus lora weights or smth.
+
+#
+Maybe the main problem with models is that the intent is not brought about correctly. Ie when doing an image I have something specific in mind because I have a certain goal with it but the model does not have this contextual understanding. solve with back questions?
+
+#
+Let model decide on which and how much tokens to train. ideally then it would only learn useful information and discard information that will not be useful later on.
+thus maybe also sample efficiency will go up

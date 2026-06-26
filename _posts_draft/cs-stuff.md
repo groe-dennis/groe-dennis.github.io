@@ -42,3 +42,174 @@ $$\text{UCB Score}(i) = \hat{\mu}_i(t) + \sqrt{\frac{2 \ln t}{N_i(t)}}$$
 
 (the specific form with the square root comes from the Hoeffding's Inequality: Hoeffding's inequality proves that the probability of the true mean $\mu_i$ being larger than your empirical estimate $\hat{\mu}_i$ by some padding $\epsilon$ decreases exponentially with the number of samples:)
 
+
+# Feature Selection im Maschinellen Lernen
+
+oft Tausende von potenziellen Einflussfaktoren (Features). Viele davon sind aber redundant oder korrelieren miteinander.
+
+Wenn du ein Modell mit allen Faktoren fütterst, neigt es zu Overfitting (es lernt auswendig, statt zu verstehen) und wird extrem langsam.
+
+Nutzt man hier ein Greedy-Verfahren (oft Forward Selection genannt), sucht man das wichtigste Feature heraus.
+
+Durch die Orthogonalisierung zieht man den Effekt dieses ersten Features von allen anderen ab. Das nächste gewählte Feature bringt also garantiert neues, unabhängiges Wissen ins Modell
+
+## Ideas
+Wenn man nur unabhängige feature in ein nn bringt, gibt es dann die perfekte, generalisierende Lösung aus?
+
+Scheinbar ist da was dran. Also sollte jeder feature vektor im stream maximal orthogonal sein oder so
+
+#
+
+"Dann ist ein Gradientenschritt ungefähr wie:
+text
+ 
+     
+ 
+ 
+1
+2
+Nimm die Richtung, die den Loss am meisten reduziert,
+ohne frühere Fortschritte stark kaputtzumachen.
+ 
+ 
+
+Das ähnelt Greedy bei orthogonalen Features.
+
+In einem linearen Modell mit orthogonalen Features ist Greedy tatsächlich ideal:
+text
+ 
+     
+ 
+ 
+1
+y ≈ Σ_i w_i x_i
+ 
+ 
+
+Wenn die x_i orthogonal sind, dann kann man jedes Gewicht unabhängig bestimmen. Es gibt keine Interferenz.
+
+Bei neuronalen Netzen sind Features nicht exakt orthogonal, aber bei großer Breite kann ungefähr gelten:
+text
+ 
+     
+ 
+ 
+1
+2
+3
+4
+Feature-Interferenz ↓
+Gradientenrichtungen werden unabhängiger
+Conditioning verbessert sich
+Loss-Landschaft wird lokaler konvexer
+ 
+ 
+
+Dann wird Gradient Descent zuverlässiger."
+
+
+# Sparse approximation
+
+Man sucht einen Vektor $x$, der das Gleichungssystem $y \approx D x$ löst, unter der Bedingung, dass die Anzahl der Nicht-Null-Einträge in $x$ (die sogenannte $L_0$-Pseudo-Norm) so klein wie möglich ist.
+
+$$y \approx \sum_{i} x_i d_i$$
+
+Also quasi Du möchtest $y$ als Linearkombination aus so wenigen Atomen wie möglich darstellen.
+
+## Lösung 1, greedy, Matching Pursuit
+
+Der Greedy-Ansatz (Matching Pursuit)Ein Standard-Greedy-Algorithmus geht so vor:
+* Suchen: Finde den Vektor $d_i$ aus dem Wörterbuch, der die größte Ähnlichkeit (das größte Skalarprodukt) mit deinem aktuellen Signal $y$ hat.
+* Abziehen: Ziehe den projizierten Anteil dieses Vektors von $y$ ab. Was übrig bleibt, ist der Rest (Residuum $r$).
+* Wiederholen: Nimm das Residuum $r$ als dein neues Signal und suche den nächsten Vektoren.
+
+
+Problem hier ohne Orthogonalität:
+Wenn die Vektoren im Wörterbuch nicht orthogonal sind, kann es passieren, dass der Algorithmus im nächsten Schritt wieder einen Vektor wählt, der dem ersten sehr ähnlich ist: 
+
+* Kann immer wieder ähnliche Atome auswählen, die kleine Fehler in früheren Atomen ausbesser, läuft damit quasi im Zick-Zack
+* Frühe "schlechte Entscheidungen" können nicht korrigiert werden
+* 
+
+Lösung ist Orthogonal Matching Pursuit
+
+## Orthogonal Matching Pursuit
+
+MP: „Ich füge einfach das nächste passende Atom hinzu.“
+OMP: „Ich füge das nächste passende Atom hinzu und rechne dann die ganze Mischung neu aus.“
+
+
+1. Wieder atom wählen wie bei MP, der das residum minimiert, mittels dot-product
+2. Dann schaut man sich aber die bisher genutze Atom-Menge an, und mit dem neuen Atom dazu lösung man Least-aquares Problem um die Koeffizienten neu zu optimieren. Quasi ein Korrekturschritt (Atome bleiben gleich nur koeffizienten ändern sich)
+3. Dann wieder das Residuum berechnen und das nächste Atom auswählen
+
+Das neue Residum ist dann immer orthogonal zu allen bisherigen Atomen. (Wenn Atom 1 und 2 zB ein Ebene aufspannen, wird Residuum vertikal darauf stehen. Deswegen werden dann keine Atome mehr gewählt die auf der gleichen/ähnlichen Ebene sind wie Atom 1 und 2)
+
+
+
+-> Wenn dein gesamtes Ausgangs-Wörterbuch bereits aus paarweise orthogonalen Vektoren besteht, ist MP greedy schon optimal!
+-> Das ist zB bei JPEG so, dort sind die Atome so vordefiniert, dass sie schon orthogonal liegen. Dort sind Atome für menschliche Augen relevante Vekoren wie Farbverläufe und Karomuster
+
+Bei MRT hilft OMP weil man nur einen Bruchteil der Daten messen muss, aber OMP trotzdem gutes Bild rekonstruiert.
+
+## Ideas
+Kann man das einfach als standard nn training sehen?
+Also quasi in jedem gd schritt wird ein gradient drauf addiert. Also ist jeder gd wie ein feature das addiert wird, mit dem ziel das am ende y, also die prediction für das gesammte Datenset approximiert ist
+
+Das ist ein anderer BLick auf gd, nicht durch loss landschaft laufen, sondern gd lernt quasi das nächst wichtigste feature und fügt es hinzu. Das erklärt warum gd an sich optimal ist, also quasi "den besten abstieg" maxcht, es fügt immer das beste feature hinzu
+
+ok jetzt gibt es ja aber OMP, aus MRI research, hilft uns das? Machen große modelle automatisch OMP?
+
+Quasi eigentlich: jedes feature in dem llm ist ein eigenes atom, und wenn man die atome aufaddiert bekommt man intelligenz
+
+* OMP ist interessant. Es ist ein greedy algorithmus, aber in jedem Schritt führt er erstmal noch ein Cleanup der Historie durch. Früheres Error Correction quasi. Macht greedy natürlich nicht direkt optimal aber vlt besser. Bei nn vielleicht erstmal alte gradienten verbessern bevor man einen neuen gradienten aufaddiert?
+
+* Chat sagt dass OMP bei Sparse Coding und Dictionary Learning eingesetzt wird, kann man nutzen um SAEs zu verbessern?
+
+# Projection pursuit
+In high-dimensional data, most low-dimensional projections just look like a meaningless, blurry cloud of points. This is actually a mathematical fact as dimensionality grows, most random projections of data tend to look normally distributed (Gaussian).
+
+-> Projection Pursuit tries to find "interesting" projections, so maximally not gaussian
+
+-> Via optimization: proejct into lower subspace, measure its interestingness, optimize for interestingness
+
+Measures of non-gaussianity can we varied, one is "kurtosis" (standard normal has 0, clusters and heavy tails have high kurtosis)
+
+## Relationship to PCA 
+PCA maximizes variance, PP maximizes non-gaussian
+
+## Relationship to the Curse of Dimensionality
+In high dimensions, all points become roughly equidistant from one another.
+-> Traditional distance-based algorithms (like $k$-Nearest Neighbors or density estimation) completely break down because the concept of "nearness" loses its meaning.
+
+-> PP bypasses the high-dim problems by doing all calculations in low-dim
+
+## Relationship to other algorithms 
+Independent Component Analysis (ICA): Essentially a fast, specialized form of Projection Pursuit used heavily in signal processing
+
+Projection Pursuit Regression (PPR): An additive model that models a response variable by summing smooth functions of projection pursuit directions. It was a direct precursor to modern neural networks.
+
+
+## Ideas
+* With a lot of space, all points are equidistant? Seems related to all is one, given enough spaceiousness
+
+* Can one use a nn for down projection and just use kurtosis as loss? what happens then
+
+* Can one use a nn for down projection and search for all the interesting relationships?
+
+# Projection Pursuit Regression (PPR)
+
+## Ideas
+This seems quite like the idea I was having to look at sparse approximation
+
+Actually quite nice to thin
+
+# Independent Component Analysis (ICA)
+
+The Classic Example: The Cocktail Party Problem
+
+Microphone 1: $0.6 \times \text{Speaker A} + 0.4 \times \text{Speaker B}$Microphone 2: $0.2 \times \text{Speaker A} + 0.8 \times \text{Speaker B}$
+
+CA takes these mixed signals and separates them back into the original, pure audio streams of Speaker A and Speaker B.
+
+By the Central Limit Theorem, when you mix independent signals together, the mixture looks more Gaussian than the original signals. ICA exploits this in reverse: it uses Projection Pursuit to rotate the mixed data until the resulting axes are as non-Gaussian as possible. When non-Gaussianity is maximized, the original independent signals cleanly separate.

@@ -1733,3 +1733,229 @@ A Structural Equation Model (SEM) is a collection of equations that represent th
 For physics nn modeling. They have data and want to determine a paramter in a function with that. But they dont just want a nn, that has to learn everything in its weights and is not rly interpretable. Instead they already have a function and just want to learn a speciic part of the function.
 
 To do so they take the function, compile it into a pytorch model and then train that model.
+
+# From Entropy to Epiplexity: Rethinking Information for Computationally Bounded Intelligence
+
+They say: Used to train for in-distribution perfomance. Now the goal has shifted to broad generalization to unseen tasks. Thus data is not about the data itself, but what the model can extract from it in order to learn general behavior
+-> Data selection
+(existing theory here contradicts empirical observation)
+
+### Data processing inequality (DPI)
+No computation, statistical operation or algorithm can increase the information content of a signal. So in NN layers the information is either kept (perfectly reversible computation) or partially destroyed. Intermediate representations contain no more information than raw input data.
+----
+With DPI, synthetic data should add no additional value/information. Also from that framework Alpha Zero is a mystery as it can learn only by RL on the game rules.
+
+* They instead frame everything as the "amount of structural information a *computationally bounded* observer" can extract from a dataset
+-> Here existing notions from Shannon and algorithmic information theory are inadequate (and obscure)
+
+-> They indentiy three paradoxes, that can be justified with Shannon/information theory, yet don't conform to empirical phenomena
+### Paradox 1: Information cannot be increased by deterministic processes
+For both Shannon entropy and Kolmogorov complexity, deterministic transformations cannot meaningfully increase the information content of an object. 
+-> At odds with pseudorandom number generatiors to produce randomness, synthetic data to improve models and derivation of new knowledge by reasoning from axioms, emergent phenomena and self-play like AlphaZero
+
+### Paradox 2: Information is independent of facotirization order
+
+A property of both Shannon
+entropy and Kolmogorov complexity is that total information content is invariant to factorization: the information from observing first X and then Y is the same as observing Y followed by X
+-> But LLMs learn English text better when ordered left-to-right (functions that are easy to predict in one direction and hard in another)
+(Note: Idk, wouldn't that be in independent information? Like a text is not just independent words, its the ordering that gives the meaning in the first place)
+
+### Paradox 3 Likelihood modeling is merely distribution matching
+They propse that a computationally-bounded observer can uncover more structure than there is in the data generation process
+-> In Conways game of life the data generation is simpe, but what emerges are complex things like gliders. While unbouded observers can just simulate the simple rules, bounded observers need to make use of the emergent structures
+
+
+To capture those paradoxes, they introduce a new information measure called epiplexity (epsitemic perplexity) = the amount of structural information that a computationally bounded observer can extract from the data
+= the information in the model that minimizes the description length of data under computational constraints
+
+(Note: For ie game of life I would expect that the generally smallest model would be the rules itself, and epiplexity pockets of reducability model. Actually mhm no the generally smallest model would need to be inf looped then...)
+
+-> observer dependent: the same
+object may appear random or structured depending on the computational resources of the observer. For instance, the output of a strong pseudorandom generator appears indistinguishable from true randomness to any polynomial-time observer lacking the secret key (seed)
+
+High epiplexity data should be data that induces generalizing structural features in the model, for instance induction heads. (However, while it epiplexity measures the amount of structural information it does not say that it will be useful for downstream tasks, i.e. tasks where induction heads are not useful)
+
+
+## Background
+In order to define the interesting, structural, and predictive component of information, we must separate it out from random information—that which is fundamentally unpredictable given the computational constraints of the observer
+
+in 1900s, question was: What does it mean for a uniformly sampled inf sequence of bits to be random?
+-> Intuitively every sequence should be random, as they are all equally likely
+-> However this goes against certain principles, like the law of large numbers, which poses that limN→∞ the avg should be = 0.5 (so i.e. sequence 111111 doesn't fit that)
+-> So they first thought to just take those sequences that pass this and other test. However, "other tests" basically exludes every sequence so nothing would be random
+
+-> To solve the paradox, a sequence is random, if it passes all *computable* tests for randomness. (in terms of gambling: A sequence is random if and only if there is no computable betting strategy that can make an infinite amount of money playing against it.)
+
+### Kolmogorov complexity
+K(x) = min{ |p|: U(p) = x }
+So the Komplexity of a string x, is the length of the shortest string z that defines a turing machine that outputs x.
+
+Can also we defined on Sets S, so a TM that outputs all members in S.
+
+The conditional complexity K(x|y) is the length of the shortest program that outputs x and halts when provided y as input.
+
+### Martin-Löff random
+An infinite sequence is Martin–Löf random iff there exists a constant $c$ such that for all $n$, $K(x_{1:n}) \geq n - c$.
+(A sequence is random if you cannot compress its prefixes. For any length $n$, the shortest program to generate the first $n$ bits is basically just as long as the bits themselves (minus some minor fixed overhead constant $c$). There are no shortcuts or formulas to compress it.)
+(this is incomputable though, because due to Halting Problem Kolmogorov complexity is incomputable)
+
+To extend to finite sequences:
+* $c$-random: A finite sequence $x$ of length $n$ is $c$-random if $K(x) > n - c$.
+* Randomness Discrepancy ($\delta(x)$): Defined as $\delta(x) = n - K(x)$. It measures how much a sequence can be compressed
+
+Also, randomly sampled strings are with a high probability are Martin-Löff random:
+$$P(K(X) \leq n - c) = P(\delta(X) \geq c) < 2^{-c}$$
+(If you set a threshold $c = 10$, the probability that a randomly generated 100-bit string can be compressed by 10 bits or more is less than $2^{-10}$ (about $1$ in $1,024$, or roughly $0.1\%$).)
+
+So if we find a sequence that is highly compressible, with high prob we can state that it was not generated randomly.
+
+Computable numbers like pi or e are not algorithmically random even though at first sight they seem like it
+
+### Cryptography
+Cryptographically secure pseudorandom number generatior (PRG) are functions that produce sequences that pass all *polynomial time* tests for randomnes.
+-> No fast algorithm can tell the difference between the fake randomness and real randomness.
+
+PRG: take small amount of numbers, produce large amount of numbers that can then not be distingushied in polynomial time from random numbers
+
+(or: no polynomial time predictor can predict he next bit of a sequence better than random)
+
+PRGs central point is a One Way Function (OWF) (easy to compute but hard to reverse)
+
+* While cryptographers care about the massive gap between polynomial (fast) and exponential (impossibly slow) times to ensure security, Machine Learning architectures care about different, tighter resource boundaries.
+->Quadratic vs. Cubic time: A highly relevant boundary for Transformer self-attention (also CoT)
+
+### Random vs. Structural Information (Sophistication)
+Idea: Capture the structural information in a object as opposed to.
+To do so, define Sophistication:
+
+$$\text{nsoph}_c(x) = \min_S \{K(S) : K(x \mid S) > \log|S| - c\}$$
+
+where x is element in S
+
+-> The length of the shortest program that describes the structural/non-random part of x (how complex the string is given we remove every random part)
+
+-> the smallest Kolmogorov complexity of a set S such that x is a random element from that set 
+
+very regular string → low sophistication
+very random string → low sophistication
+“interesting” structured string → high sophistication
+
+So Sophistication is the smallest Ko Complexity of a set S, given some contraints
+-> We take a look at many (or all) sets of binary strings. From all those sets, we only take those where the length of the shortest program that outputs x given S is greater than the kardinality of S (minus c), (so its ML random)
+-> From all of those, we take the length of the shortest program that produces S
+
+So for the condition it says: Given that the TM already knows S, how complex is it to produce x? And we want ones where its at least somewhat complex.
+-> equivalent to say that the TM that outputs x given S (which is a bitstring) is ML-random (the program is equally long as the amount of states it can produce)
+
+It is done by searching for a set/model S such that:
+
+x belongs to S,
+S is describable by a short program,
+and x is still a typical member of S, meaning it still takes about log∣S∣ bits to pick x out of S.
+
+
+If x is a special member of S, then it is easy to pick it from S, so K(x∣S) is low, thus it gets filtered from the conditional. 
+
+Basically, we need a TM that outputs stuff like S, and then x needs to be random in S, so if we have a grid with a pattern and like 3 random flipped bits, we can take the pattern in S because then to identify x (so a fixed set of random flips) we still need a lot to identify it.
+
+---
+I still don't complety get it tbh. ChatGPT seems to be confused as well. actually in the secodn to last message here https://gemini.google.com/app/15d71bab430a6f7b?hl=de its explained well
+
+---> A string of very high sophistication would be a data string that has very high Kolmogorov complexity ($K(x)$), yet its complexity comes from an incredibly dense, layered set of rules ($S$) rather than from meaningless random noise.
+
+pure radio static: High K, low soph
+digits of pi: low K, low soph
+playing chess perfectly: high K, high soph
+
+### Why Sophistication is not enough
+First, we can never actually find one or prove a specific string has high sophistication.
+
+(You can never prove that any specific string has a Kolmogorov complexity higher than $L$.Because proving a string has high sophistication requires proving it has high Kolmogorov complexity ($K(x) > L - O(1)$), you hit a logical dead end.)
+
+Second, sophistication assumes infintie compute. Thus, many things that look complex to humans might actually have a sophistiication of almost zero. Example fluid dynamics: if a program has unlimited computation time, it doesn't need to describe the whole swirl. It just needs a tiny program containing the basic Navier-Stokes physics equations and the initial starting positions. (Tm can just run those simple steps for a large number of time and reproduce exactly, thus low soph)
+### MDL Principle
+
+It answers a simple question: If I have a dataset, how do I pick the absolute best model or neural network to explain it?
+
+The best model is the one that minimizes the total number of bits required to store two things:$$L(x) = \min_{H \in \mathcal{H}} \Big[ \underbrace{L(H)}_{\text{Part 1: Size of Model}} + \underbrace{\left(-\log P(x \mid H)\right)}_{\text{Part 2: Size of Data given Model}} \Big]$$
+
+$L(H)$ — The Cost of the ModelThis is the number of bits it takes to write down the model $H$ itself (e.g., the file size of the Python code or the number of parameters/weights in a neural network).
+
+$-\log P(x \mid H)$ — The Cost of the Leftover Errors
+(If a model makes perfect predictions, $P(x \mid H) = 1$, and $-\log(1) = 0$ bits. The data takes up no extra space because the model completely predicted it.)
+
+### Epiplexity
+The Dual of MDL (MDL is model selection, Epiplexity is Data selection)
+-> You have a fixed, unchangeable computation budget (e.g., you can only afford to train a model for 24 hours). You use this metric to look at a massive ocean of data and select the exact subset of data that fits your budget perfectly.
+
+Epiplexity captures the structural information present to a computationally bounded observer
+-> As the computational constraints of this observer change, so too does the division between random and structured content.
+
+Time-bounded probabilistic model ($P$).: A formal defintion of a program that acts as a statistical model under time constraints.
+* Evaluation: f you hand the program a piece of data $x$, it must tell you the probability of that data ($P(x)$) and halt within $T(n)$ steps.
+* Sampling: If you feed the program a stream of random coin flips, it must output a realistic fake data sample $x$, also halting within $T(n)$ steps.
+
+Now Defintion:
+Given a random variable X (a distribution of data, like all text on the internet), they are interested in the best time-bound program that solves:
+$$P^\star = \arg\min_{P \in \mathcal{P}_T} \Big\{ \underbrace{|P|}_{\text{Program Size}} + \underbrace{\mathbb{E}\left[\log \frac{1}{P(X)}\right]}_{\text{Average Error Size}} \Big\}$$
+
+From here they define
+
+*Epiplexity*: $S_T(X) = |P^\star|$
+-> Size of the program, captures he amount of structural information that a limited observer can successfully extract from the data in $T$ steps.
+*Time-bound-entropy*: $H_T(X) = \mathbb{E}[\log 1/P^\star(X)]$
+-> expected number of leftover bits needed to compress the data given that model. It represents everything that still looks like random noise to the observer because they don't have enough time to compute the underlying pattern.
+
+Result: with small time budget, epiplexity is low as the model can only see basic structures
+As the computational budget increases, what previously looked like uncompressible noise (high entropy) is suddenly revealed to be structured.
+
+pure noise has zero epiplexity and simple patterns have zero epiplexity
+
+$$MDL_T(X) := S_T(X) + H_T(X)$$Think of $MDL_T$ as the total "storage footprint" required by a computationally bounded observer to hold the data—the size of their model plus the size of the errors they couldn't figure out in time $T$.
+
+4) $MDL_{T'}(f^{-1}(X)) \leq MDL_T(X) + |f| + c_2$This is the most critical and interesting property in the list. It is the time-bounded version of a famous rule in information theory: Processing data cannot create new information.
+### Pseudorandom number sequences have high random content and little structure
+For a fast computer, the epiplexits of a pseudorandom number is very tiny. earlier measures like shannon or kolmogorov do not capture this.
+
+### Existence of Random Variables with High Epiplexity
+They prove that they exist, however growing log in data dimension. 
+(They say this does not explain the power laws observed in model data scaling, but I actually think this seems intuitive -> from n data you only get log(n) structrual data, kinda like the inverse scaling laws)
+
+### Conditional epiplexity and time-bounded entropy
+
+## Notes
+IDK about everything, isn't it basically that emergent behavior via simple rules is complex, and basically generates infinite training data and to learning means finding pockets of reducability?
+
+## Ideas
+Shift ARC-AGI training from just training on the data to finding data, that, when trained on, produces good ARC-AGI performance.
+
+* AlphaZero ist interessant, weil es hat ja nur simple regeln basically (sehr related zu Wolfram stuff) und lernt damit aber trotzdem sehr komplexes verhalten. Gibt es einfache regeln, die dann ein Datenset erstellen, mit dem dann NN ARC lernen kann? Well, natürlich der Lösungsalgorithmus, aber ja... :D
+
+* There is something that can be learned by prediction of bag of words, but more when the text is in its proper order. Can we construct a model that only learns from the difference of the two, so it can never rely on the bag of words heuristic? (which does help somewhat but does not generalize...)
+
+* Interesting take Paradox 3: Basically due to the restrictions of the observer, it can not use the simple rules directly, but needs to find pockets of reducability, so emergent structures, to do predictions
+
+* Intersting how the statment about PRG, framed as next token prediction. NN are polynomial time predictors (I guess) and so some stuff they cant figure out, but maybe in languge such big randomness does not exist
+
+* What do NN learn when trained on Game of life stuff? do they discover the correct algo with enough training data? what about giving it to a base model?
+
+* Base model will do a mixture or correct reasoning and spuriius cues/fast reasoning- even when given a lot of data so bascially CoT reasoning. how to elicit reasoning behavior
+-> can we, given that we know the correct answer, adjust the llm slithely such that it has the correct rule? what can we learn from what we had to adjust there? can we in this way find out how to generally make the model more reasoning and less spurious cues? find the minimal change maybe
+
+* Higher IQ ppl are just ppl with a higher computatinal power in a sense, so they see less things as random
+
+* Intersting that there is a difference between the rules of chess and the rules to play chess perfectly. Also interesting that the rules to play chess perfectly can be generated from just the rules of chess via RL
+Can we have a "rules of language" that then when RLd tells us how to play language perfectly?
+IS this related to emergence? simple rules but they kinda just define a space and in that space a competent agent can operate...
+
+* The example with the fluid dynamics: I think it likely coming from the ruliad thinking that anything complex can be described in simple rules thus anything has low sophistication assuming infintie compute. In that sense, shortcuts are essential in learning anything. So maybe shortcut learning isnt a bug, but a feature
+-> "random" ist just structutre but with less time to think about it
+-> then when do models go wrong? when they try to predict something that they should not yet be able to given theirs training or ttt time. like if at the beginning of training they already try to fit super complex stuff that will fail, because the compure they have at that point will only allow for bad learning?
+
+* From the defintion of P* I noticed a curiosity: It can be that there a multiple P*, i.e. its a line, with a tradeoff between model size and how well a model predicts. Actually a good point also in normal model training, maybe we actually want a worse model prediction wise if that means that we can have a smaller model. 
+-> Oh in that view it actually actively hurts to train on all tokens, as then the model will be more complex but it doesnt help us for actually usefull stuff.
+
+* Epipilexity, interesting, how do they measure this computational budget? is it layers? or is it amount of parameters? or amount of GD steps?
+-> gemini says from theo viewpoint its the amount of clock cycles, so maps to depth of layers -> ah they explain later in papaer
+
+* Can we construct the inverse scaling laws? (### Existence of Random Variables with High Epiplexity)
