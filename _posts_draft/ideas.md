@@ -271,3 +271,25 @@ Maybe the main problem with models is that the intent is not brought about corre
 #
 Let model decide on which and how much tokens to train. ideally then it would only learn useful information and discard information that will not be useful later on.
 thus maybe also sample efficiency will go up
+
+questio oc what do even train for? when do we want to learn from a token and when not? 
+ie val loss is misleading? because we dont actually want the model to be able to predict every token in the val set
+
+#
+Maybe we can do this let model decide what to train in a way that we make like a test, that checks if a model has access to a certain token prediciton, does that make some other text easier to predict?
+so maybe let a trained model give some text and mask some token so which tokens are needed to predict another token.
+OC there might be a difference between what we want to keep and what is just needed for a specific text...
+maybe which token is important to learn for some completly different text.-> ood generalization
+maybe train with that first and only after do normal training (to recover normal model behavior, but due to prepretraining it will only learn good stuff)
+-> generally maybe do the paramter golf but find a good way to do pre-pretraining
+-> maybe here we can differentiate between memprization and reasoning, if we can construct prepretrain so that we only have reasoning, we can add some slight memorzation on top.
+how usefull is some data to predict other data, that is completly unrelated is that reasoning?
+
+# 
+Physical reservoir computing with microphones and camera seems like a cool project
+
+#
+can we do smth when we have few input variables, and then we just have a massive dataable that kinda skips llm layer computations? 
+
+#
+An algorithm is independent of data. howver llms are very dependent of data. how to construct smth similar that is independent of data? a few tokens that always get uniform token as input, then other tokens can depend on them? maybe thats a better seperation? 

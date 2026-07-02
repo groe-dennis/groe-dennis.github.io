@@ -1921,10 +1921,210 @@ For a fast computer, the epiplexits of a pseudorandom number is very tiny. earli
 They prove that they exist, however growing log in data dimension. 
 (They say this does not explain the power laws observed in model data scaling, but I actually think this seems intuitive -> from n data you only get log(n) structrual data, kinda like the inverse scaling laws)
 
+Epiplexity typcially grows with the size of the dataset
+
+the epiplexity of a typical dataset is
+orders of magnitudes smaller than the random information content
+
 ### Conditional epiplexity and time-bounded entropy
+In standard machine learning tasks (like training an AI to look at an image $X$ and predict a label $Y$), we do not care about the complexity of generating the image. We only care about the complexity of the relationship between the image and its label.
+
+best fast-running program ($P^\star_{Y \mid X}$) that takes $X$ as an input and outputs the probability of $Y$:
+
+$$P^\star_{Y \mid X} = \arg\min_P \Big\{ |P| + \mathbb{E}_{(X,Y)}\left[-\log P(Y \mid X)\right] \Big\}$$
+
+Conditional Epiplexity ($S_T(Y \mid X)$): The size of the program (or neural network weights) needed to learn the predictive rule mapping $X \to Y$.
+
+Conditional Time-Bounded Entropy ($H_T(Y \mid X)$): The remaining unpredictability of the labels that the model couldn't figure out within the time limit $T$.
+
+## Measuring Epiplexity and Time-Bounded Entropy
+
+How do you measure the "bit length" of a neural network?
+
+Naiive approach: let P be a program that
+directly stores the architecture and weights of a neural network and evaluates it on the given data
+-> this approach can significantly overestimate the information content in the weights, particularly for large models trained on relatively little data. 
+->  Instead, use a more efficient approach that
+encodes the training process that produces the weights
+
+-> prequential coding (heuristic but easier to evaluate) and requential coding (more rigorous but harder to evaluate)
+
+Instead of "Turing Machine Steps" they use FLOPs and draw on common training laws (Kaplan, Training a neural network with $N$ parameters on a dataset of $D$ tokens takes approximately $6ND$ FLOPs, evaluating 2ND FLOPs)
+
+## Approximating Model Description Length with Prequential Coding
+
+(Classic approach for compressing the training process of a neural network)
+-> basically the area under the curve of the training run above final loss, so 
+
+* Core concept: Synchronized Decoder Game (Sender and Reciver NN)
+-> Both initialized the same
+-> Sender gets training token Z and calculates the prob
+-> Using an arithmetic coder, the prob is compresed into $\log \frac{1}{P_i(Z_i)}$ bits. (the more suprised Sender is, the more bits are required, Shannon)
+-> Receiver gets the code and using its own network, perfectly reconstructs Z
+
+Thus, 
+$$\text{Total Combined Code Size } L(Z_{:M}, P_M) = \sum_{i=0}^{M-1} \log \frac{1}{P_i(Z_i)}$$
+Which is both training data and final model weights
+
+(Good predictions take fewer bits to transfer because like in the game 20 questions, the desired word is already almost identified and fewer bits are needed)
+
+-> Now, this code is the information of the data and the final model weights together. But they desire only the final model weights information
+
+* They define the leftover description length of the data given the final model as its entropy code length under that fully trained network:
+$$L(Z_{:M} \mid P_M) = \sum_{i=0}^{M-1} \log \frac{1}{P_M(Z_i)}$$
+
+By subtracting this final baseline cost from the step-by-step training costs, they isolate the model's footprint:$$|P_{\text{preq}}| \approx \sum_{i=0}^{M-1} \left( \underbrace{\log \frac{1}{P_i(Z_i)}}_{\text{Loss at step } i} - \underbrace{\log \frac{1}{P_M(Z_i)}}_{\text{Final Converged Loss}} \right)$$
+
+-> This is the area under the curve of the training run above the final loss, when data is i.i.d
+
+* Pure random noise has low area (so low epiplexity) as model never learns
+* Super simple data also has low area (so low epiplexity) as loss instantly drops
+
+This area is measured on the test loss, else the model can cheat by memorization (as is the case in the decoder game, decoder must guess Z before training on it)
+
+### Downsides of prequential
+* Information symmetrie (P(x/y) = P(y/x)) only holds in the infinite compute setting and not when time bounded. I believe massive problem as this is the very fact epiplexity depends on
+-> prequential only proves that a program of that size exists, not that it can be executed quickly
+-> We know it takes exactly $6ND$ FLOPs of time to generate the model weights $P_M$ by running the full training loop token-by-token.
+->But if we compress those weights into a compact file of size $|P_{\text{preq}}|$, how long does it take a computer to unpack that compressed file and actually use the model?
+->The math of time-bounded Kolmogorov complexity states that unpacking a highly compressed representation can sometimes take an astronomical, exponential amount of time (like trying to guess a password by brute force).
+-> (we only get a code for data+model. if we then only use the code part, unpacking to nn weights could take a long time)
+
+* The calculations with the decoder game is a upper bound on Kolmogorov COmplexity, i.e. a smarter algo could compress even more. Then due to math, subtracting the two upper bounds does not give an upper bound for the model
+
+##  Explicitly Coding the Model with Requential Coding
+
+Flaw of prequiential is that it is based on a real dataset. Requential instead ignores the real dataset during the transmision game. Instead it utilizes a Teacher-Student framework to compress the statistical behavior of the model.
+
+* Core hack: the exact identity of the training data points doesn't matter. If you want to train an image classifier to recognize a "cat," you don't need to look at five specific cat pictures; you just need to look at any five realistic cat pictures.Therefore, Requential Coding does not pay bits to compress real data ($Z$). Instead, it compresses a training run that uses purely synthetic, fake data generated on the fly.
+
+* The sender has a sequence of pre-trained "Teacher" checkpoints ($P^t_0, P^t_1, \dots, P^t_{M-1}$) and a student network. Teacher *can* be a model trained on X
+
+* At step i the sender uses the current teacher to sample a synthetic data token. Then similiary as before, this token is compresed given the students predictions. And then normally sent and receiver updates his student
+
+* Due to relative entropy coding (Say you have two Distrbutions, P of the teacher and Q of the studnt and data actually follows P but you want to encode with Q. Then the bits required is defined by the KL divergence between P and Y) 
+-> $$|P_{\text{req}}| \approx \sum_{i=0}^{M-1} \text{KL}(P^t_i \parallel P^s_i)$$
+
+-> this can be seen as the area between the curves of student and teacher. In the case that the teacher is static, prequential is an approximation of requential
+
+### Why this solves the mathematical shortcomings
+* For prequential we needed to subtract to upper bounds because we wanted to remove the data from the model size. This does not lead to a upper bound. As requential does not rely on data this goes away. The only data sent is the nudging of the teacher to the student, not the data itself
+
+(Prequential Way: The Sender gives the exact street address, house number, and GPS coordinates of a specific house ($Z_i$)
+Requential Way: The Sender doesn't care about a specific house. They just want the Receiver to shift their attention toward that neighborhood. So, the Sender just yells: "Go North-East!" The phrase "Go North-East" is incredibly short.)
+
+* Also bcause we directly get a code for the model, we can just use the decoder game to get the nn weights, thus it is time bounded in normal training time. For prequential this only works for the data+model code but that is not what we try to estimate.
+
+(Honestly I dont complety get this)
+
+## How Epiplexity and Time-Bounded Entropy Scale with Compute and Data
+
+Natural assumption: Larger models are more sample efficient.
+And: You need to scale both data and model size
+
+Epiplexity grows with compute budget, so it allows to extract more structural information and reduce apparent randomness.
+
+(However there are counterexamples related to emergence.)
+
+
+##  Paradox 1: Information Cannot be Created by Deterministic Transformations
+In classic inf theory, information can not increase through processing, but in real world with alpha zero and syntethic data it does.
+
+-> They resolve by: The classical rule only holds true if the observer has unlimited computation.
+
+Prove via PRG, 
+$$H_{\text{Poly}}(G(U_k)) - H_{\text{Poly}}(U_k) \approx n - k$$
+-> for a polynomial-time observer, the time-bounded entropy increases dramatically with a one-way function
+
+-> This gives us a crucial rule for Synthetic Data: If you want a deterministic algorithm to generate valuable, interesting data, the function you use must not have a simple, efficiently computable inverse. (then it acts as an information generator for a bounded observer.)
+
+Also example with celluar automata, simple rules are learned instantly, chaotic rules are never learned, but with rule 54, which produces a mix of chaotic noise interspersed with complex, interacting localized structures (gliders, walls, and patterns) loss decreases steady with compute
+
+## Paradox 2: Information Content is Independent of Factorization
+In classical information theory, information content is completely independent of how you factor (slice) a dataset.
+-> real world contraticts that though, i.e. with text in normal direction being easier to model
+
+* Again resolved by a bounded observer 
+If $f$ is a one-way function, $X$ is a secret seed, and $Y = f(X)$ is the scrambled output, a polynomial-time observer faces a strict informational gap:$$H_{\text{Poly}}(X \mid Y) + H_{\text{Poly}}(Y) > H_{\text{Poly}}(Y \mid X) + H_{\text{Poly}}(X) + \omega(\log n)$$
+(left side requires inverting a one-way function)
+
+* Empirically they show this with cellular automata rule 30 (which is believed to be a one way function) where the forward converges quickly to the true shannon entropy baseline, but predicting the other way around has a gap
+
+* Also for chess, predicting final state from moves is easier that predicting moves from final state. They theorize that in the later the model needs to develop a richer understanding of math
+
+* I think they don't differentatie between one-way permutations and one-way functions. First is bijective, sencond not. But for the first the initial condition can be found, for the second all possible combintations to get to final state can be found
+
+* Main point: The asymmetry through one-way functions creates epiplexity
+
+## Paradox 3: Likelihood Modeling is Merely Distribution Matching
+
+Common belief: from a particular training distribution, we can at best hope to match the data generating process
+-> So in that view from human data no superhuman performance can be learned
+
+"Here we provide two classes of phenomena that seem to contradict
+this viewpoint: induction, and emergence. In both cases, restricting the compute available to AI models leads them to extract more structural information than what is required for implementing the generating process itself."
+
+### Induction
+They want to show: predicting data requires building complex, inverse-logic neural circuits that were completely absent from the data-generating process itself.
+
+* Murder mystery analogy. Predictior needs to figure out the murderer, the generator (author) does not
+
+To formalize: 
+* random variable Z, masking function m(Z) hides h bits of information, a function f(Z) transforms the variable, then final dataset with pairs Y= (m(Z), f(Z))
+
+* Case one: hard induction. he model is given a partial state of Rule 30 where $h$ bits are completely missing. The Task: The model must predict the output $f(Z)$. Because Rule 30 behaves like a cryptographic one-way function, there is no clever shortcut.
+-> In cases where the rule is simple, "invertible" means that each element is just a simple function of its neighbours (I believe) and thus the hidden elements can easily be calculated
+-> so instead for the hard rule the model resolves to try every combination and then run F
+
+More generally:  For a hard rule, all elements are entangled, thus you can not solve just one without also looking at all the others. For a easy rule they are not entangled so can be calculated seperatly
+(I think)
+
+* Case 2: Markov chain, with a 8 x 8 transition probability matrix Z. f generates a text sequence with that matrix. Model gets 
+$$\text{Sequence} = [\underbrace{m(Z)}_{\text{The Prompt}}, \underbrace{f(Z)}_{\text{The Text Sequence}}]$$
+To solve model needs two strategies:
+1. Deduction circuit: When the model encounters a symbol from the $V-h$ visible columns (like symbol A), it doesn't need to guess. It looks back at the prompt $m(Z)$ in its context window, finds the exact probability row for A, and copies it
+2. Induction circuit (In-Context Learning): When the model encounters a symbol from the $h$ hidden columns (like symbol G), it looks at the prompt and sees a blank space. To predict what comes after G, it must look at the actual text sequence $f(Z)$ generated so far.If it notices that every time G appeared earlier in the text, it was followed by B, it inducts that the missing matrix value for G must favor B. It uses an Induction Head to dynamically calculate the statistics of the sequence on the fly.
+
+They show that early in learning model only uses the deduction, only later it cracks the induction circuit. 
+-> Induction never was part of the data generation process yet still because it is a MLE it has to evaluate how plausible a string X is so it needs induction
+
+The VAE ParallelThe authors point out that this happens in Variational Autoencoders (VAEs) too:To sample a random image from a VAE, you only need the Decoder network. The data-generating process is simple.But to train the VAE or evaluate a likelihood, you are forced to build a massive, highly complex Encoder network whose sole job is to perform induction (approximating the hidden latent variables $P(Z \mid X)$).
+
+
+-> There is absolutely no mathematical limit to how much larger, more complex, and more intricate an AI model's internal program will be ($S_T$) compared to the tiny program ($G$) that generated its training data.
+
+-> the boundness of the observer is the driver why interesting concepts emerge. If the nn was infinite it could just evaluate every possible future and then pick the best one
+(does that mean that in order to get interesting behavior, we need the computational ability of a model to be lower than what it takes to brute force it? maps well to weight decay)
+### Emergent phenomena
+
+"One of the most striking counterexamples to the “distribution matching” viewpoint is emergence. Even when a system’s underlying dynamics admit a simple description, an observer with limited computation may need to learn a richer, and seemingly unrelated, set of concepts to predict or explain its behavior."
+
+-> knowing the rules of some cellular automata does not help us in predicting its behavior (as it takes long to evaluate). But we can find shortcuts, at least for parts of it
+
+"observers predicting future states may be required to
+learn more than their unbounded counterparts who can execute the full generating process."
+
+* A system is Epiplexity-Emergent if we compare a low-compute observer ($T_1$) and a high-compute observer ($T_2$) predicting its evolution:
+- The 1-Step Map: If they only have to predict 1 step into the future, both observers use the exact same simple micro-rule. Their Epiplexities match perfectly:$$S_{T_1}(\Phi(X)) - S_{T_2}(\Phi(X)) = \Theta(1) \quad \text{(A small constant gap)}$$
+-The Multi-Step Map: If they have to predict $k$ steps into the future, the high-compute observer keeps using the tiny micro-rule over and over. But the low-compute observer is forced to build a massive internal dictionary of emergent macro-concepts. The gap between their description lengths blows up:$$S_{T_1}(\Phi^k(X)) - S_{T_2}(\Phi^k(X)) = \omega(1) \quad \text{(An infinitely growing gap!)}$$
+
+-> "In words, Φ, X displays emergent phenomena if two observers see equivalent structural complexity in the one step map, but asymptotically more structural complexity in the multistep map for the observer with fewer computational resources"
+(Note: They don't consider cases that are really computationally irreducable)
+
+## Epiplexity, Pre-Training, and OOD Generalization
+
+"OOD generalization is fundamentally about how much reusable structure the model acquires, not how well it predicts in-distribution. "
+"Two models trained on different corpora can achieve the same
+in-distribution loss, yet differ dramatically in their ability to transfer to OOD tasks. This happens because loss captures only the residual unpredictability, corresponding to the time-bounded entropy,
+not how much reusable structure the model has internalized to achieve that loss. Epiplexity measuresexactly this missing component"
+
+", Zhang et al. (2024) observed that downstream task performance benefits most from training on type IV ECA (emergent ones) rules over the other ECA rules, "
+
 
 ## Notes
 IDK about everything, isn't it basically that emergent behavior via simple rules is complex, and basically generates infinite training data and to learning means finding pockets of reducability?
+
+
 
 ## Ideas
 Shift ARC-AGI training from just training on the data to finding data, that, when trained on, produces good ARC-AGI performance.
@@ -1959,3 +2159,41 @@ IS this related to emergence? simple rules but they kinda just define a space an
 -> gemini says from theo viewpoint its the amount of clock cycles, so maps to depth of layers -> ah they explain later in papaer
 
 * Can we construct the inverse scaling laws? (### Existence of Random Variables with High Epiplexity)
+
+* this whole time boundedness, like ... that the model couldn't figure out within the time limit $T$. - it seems to be the core of the issue. the model first learns the easy spurious cues, and then goes on with the error that sill remains. Maybe thats needed to do but maybe there is a different way, i.e. to take some data and really understand/solve it without using the spurious cues as stepping stones...
+
+* Compression of the training process is an interesting concept - Compression is intelligence, but what does it mean to be able to compress the compression algorithm itself (GD?) Can we compress a generalizing algo and then apply it for new arc agi tasks?
+
+-> maybe one does not only need to compress for data, but also compress the compression algorithm in order to find the solution that is best. Like in meditation, not only see the thing but also see the seeing
+
+* Game of 20 questions, can we frame nn training like that? ie it needs to pose questions in order to figure out next token explicitly. mybe good for distillation
+Distillation intereting bc no new info, but that is the same as in previous papers that explained it that its still useful
+
+-> maybe its a good idea to have a model make logn predictions, each one restricting the output tokens. maybe at each layer. that way, at each layer information is restricted, and a few layers suffice. then the loss function can be done over all layers. or cot style output log n token for one actual token. so a decision tree is simulated. also then intersting how to construct the decitions, maybe that can also be done as a prediction, so the decision tree itself is also constructuabel. maybe also nice for interpretability.
+-> can a arc agi task be posed as a 20 question game? can everything be posed as a 20 question game? just good questions..
+we can also predict all arc tokens simulatnously then, only the decisions are then dependent. (that might also be hypergraph related...)
+
+* Requential things seems related to my idea of having an llm that produces syntethic data to then feed another llm to figure out what generalizes
+
+* In Paradox 2 resolving, I am thinking so if ordering matterns and training in the direction of the harder task ist better for getting out more concepts, should we always do that?
+
+* Can we do syntethic data generation by simply testing stratgies and seeing if they are easily reversible? And if yes, its a good syntethic data...
+
+* So, the computational boundeness is a feature? Like if the nn was not bounded, it would learn the simple rule 30. but bc it is bounded it learns about gliders etc etc... interesting
+
+* For induction1, entanglement vs not entanglement maybe that is a good way to think about cellular automata? Also maybe that is related to nn training, can only figure out stuff that is at least somewhat disentangled. Can this even be a hirachy of solutions?
+Also related maybe to how the brain is structured, that it is not connected to too many neurons, else one could not compute with it in the bounded compute setting.
+
+* (does that mean that in order to get interesting behavior, we need the computational ability of a model to be lower than what it takes to brute force it? maps well to weight decay)
+
+* Time bascially leads the unfolding of entangled exp functions. If it is untangled time is not needed as everythign can be calculated in parallel. But time is needed for things that interact in between in a entangled and complicated way. Can we classify cellular automata by their entanglement between elements?
+
+* Maybe the point is to find shortcuts that predict it partly, but don't make a spurious prediction. Ie its ok not predict everything, but never predict more than you bargained for kinda
+
+* Maybe like wd walks on the 0-loss line to find lower norm, we could define training to only consider updates that have the same exact loss for all training examples, so we walk the "same loss" manifold
+-> Generally we need to restrict the searchspace such that GD converges to a generalizing answer...  maybe think what such a searchspace can look like
+Larger batches naturally lead to waling this line? maybe see if with larger batchsize the loss of that batch after the step is less spread out.
+This idea better with ES, not backprop...
+## Concepts
+* Sender-Receiver Game
+* Game of 20 questions, if I already have info about the target I need less questions
