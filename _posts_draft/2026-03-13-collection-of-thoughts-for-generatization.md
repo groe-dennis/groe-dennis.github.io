@@ -2120,6 +2120,18 @@ not how much reusable structure the model has internalized to achieve that loss.
 
 ", Zhang et al. (2024) observed that downstream task performance benefits most from training on type IV ECA (emergent ones) rules over the other ECA rules, "
 
+But: " A model trained on high epiplexity data can learn a lot of structures, but
+these structures may or may not be relevant to the particular downstream task of interest."
+
+They show via requential coding that natural data has a lot more epilplexity compared to entropy in comparision to image data. Image data has a lot of unpredictable information.
+
+"In line with our discussion on emergence in Section 5.3.2, it is possible that with significantly more compute much simpler programs can model these natural datasets, such as by directly simulating the basic laws of physics from which the natural world emerges, but the amount of required computation is likely so high that such programs remain inaccessible to any physically realizable observer and we must treat natural data as having high epiplexity for all practical purposes."
+
+Epiplexity Reaches a Hard Ceiling(with inf compute) ($S_\infty$): The total amount of structural information you can extract from a fixed dataset is bounded by the dataset size itself, dictated by the data scaling exponent $\beta$:$$S_\infty(X) = \frac{\beta}{1-\beta} D_0^\beta D^{1-\beta}$$
+-> The scale of this ceiling is controlled by $\beta$. A smaller $\beta$ means the model's loss drops very slowly as you add data. Counterintuitively, this means the dataset is incredibly rich and complex—the model is absorbing significantly more structural information per token before it runs out of patterns to learn.
+
+## Related Work
+Other notions to extract the relevant info in datasets, i.e. effective complexity, and logical depth.
 
 ## Notes
 IDK about everything, isn't it basically that emergent behavior via simple rules is complex, and basically generates infinite training data and to learning means finding pockets of reducability?
@@ -2194,6 +2206,97 @@ Also related maybe to how the brain is structured, that it is not connected to t
 -> Generally we need to restrict the searchspace such that GD converges to a generalizing answer...  maybe think what such a searchspace can look like
 Larger batches naturally lead to waling this line? maybe see if with larger batchsize the loss of that batch after the step is less spread out.
 This idea better with ES, not backprop...
+
+* Image data has less epiplexity due to unpredictablity of exact pixel. 1. how does this work when we only predict classes and not the next image? also for next image can we adjust such that we only predict the stuff that we also can predict?---
+
+* Interesting discussion with gemini regarding: here in the large compute we assume loops. But inf wide nn are also universal function approximators. But gemini says they so by having a large amount of fine grain detectors. So basically only memorization. so they can solve a function by only memorizing without using any small fundamental rules or any structures. So its like a third kind. 
+-> I wonder, can we restrict a transformers possible patterns to be only like a few and instead loop them? So like TRM but instead we let model only have a few patterns, like akin to a lookup of 3 possibilites. Ie 3 kernels that only match to smth specific.
 ## Concepts
 * Sender-Receiver Game
 * Game of 20 questions, if I already have info about the target I need less questions
+
+
+# Compute-Optimal LLMs Provably Generalize Better With Scale
+
+They study compute optimal LLMS and provie a thigher generalization bound for them.
+
+The authors prove that the generalization gap can be decomposed into three primary, interpretable components:  
+1. Parameters per Token ($\frac{N}{D}$): Under Chinchilla scaling laws, when you scale up a model optimally, the number of parameters ($N$) and the number of training tokens ($D$) grow proportionally. Therefore, this ratio remains constant.
+2. Loss Variance: The token-wise variance of the loss function. The paper proves that as models grow larger, this variance decreases—meaning the model's predictions become steadier and less erratic across different text segments.  
+3. Quantization Error: The drop in performance when a model is compressed (e.g., from 16-bit floats to a fixed lower bitrate). The paper demonstrates that this error also decreases as models scale.  
+
+Proving is done by: 
+To do this mathematically, the authors introduce a quantized (compressed) version of the model, which we can call $h_Q$, while the full-precision model is $h$. They break the gap apart by adding and subtracting the loss of the quantized model:$$\text{Generalization Gap} = \text{True Loss}(h) - \text{Empirical Loss}(h)$$$$\le \underbrace{[\text{True Loss}(h) - \text{True Loss}(h_Q)]}_{\text{Quantization Error (True)}} + \underbrace{[\text{True Loss}(h_Q) - \text{Empirical Loss}(h_Q)]}_{\text{Generalization Gap of Compressed Model}} + \underbrace{[\text{Empirical Loss}(h_Q) - \text{Empirical Loss}(h)]}_{\text{Quantization Error (Empirical)}}$$
+
+By grouping the first and third terms, they isolate the total Quantization Error. Now, they only need to find a bound for the middle term: the generalization gap of a discrete, compressed model.
+
+Through some math they then prove that the gen gap of the discrete model depends only on N, D and Loss variance
+
+* Because the first component (parameters per token) is constant on the compute-optimal frontier, the behavior of the generalization gap is entirely driven by the other two components.Since loss variance and quantization error both drop as the model scales up, the overall generalization gap shrinks. This provides a formal mathematical guarantee: larger compute-optimal models will naturally have smaller generalization gaps.  
+
+* Bounds are not super tight, but they go down with model size as expected, unlike other measures...
+
+introduced novel token-level generalization bounds for LLMs which are able
+to accommodate the non-IID nature of the tokens within the training corpus
+
+## Why less loss varianze is better for generalization
+* In standard statistics, if you want to know how well a sample average estimates a true population average, the variance of your data points is everything. High variance means the model is highly sensitive to the exact arrangement or minor quirks of the specific training data it saw. It implies that a slight shift in the distribution on the test set could easily trigger those "catastrophic loss" spikes
+
+"A conceptually useful story about the learning process involves the model accommodating predictive subprograms of progressively larger computational depth and complexity"
+When a model is small, it relies on shallow heuristics (like simple n-gram statistics), which break easily and cause high loss variance when the text gets complex. As the model scales along the compute-optimal frontier, it develops deeper internal "subprograms" capable of handling complex reasoning and grammar structures smoothly. This structural depth systematically dampens the erratic spikes in token-wise loss, forcing the overall variance down and anchoring the model's generalization capabilities.
+
+### Proof
+the authors model the sequence of token losses as a martingale difference sequence. This is a statistical framework where your next prediction error depends on everything you've learned from the history up to that point.
+
+They think of the LLM’s internal parameters not as a giant soup of numbers, but as a massive library of algorithmic subprograms (or circuits).
+
+When an LLM reads a text sequence, it is constantly routing the tokens through these internal subprograms to make its next-token prediction.
+
+A small model has a highly limited set of subprograms. As it reads a sequence of tokens, it constantly finds itself in situations where it doesn't have a subprogram suited for the text. -> Loss spikes
+
+The authors tie this directly into their Freedman-type martingale inequality.Freedman’s inequality dictates that the probability of a model’s empirical loss deviating wildly from its true expected loss is tightly bounded by the sum of its conditional variances across the sequence:$$\sum_{t=1}^D \text{Var}(L_t \mid \text{History}_{t-1})$$
+
+
+## Why better quantization is better for generalization
+* If a model has a low quantization error, it means its weights are highly resilient to rounding. The core logic of the model doesn't depend on hyper-precise, brittle weight values (which is a hallmark of overfitting).
+
+* They mathematically evaluated the rate at which an LLM absorbs unique information from a dataset relative to its physical size ($N$) on the Chinchilla compute-optimal frontier.They proved that the model’s effective information content grows sublinearly (slower) compared to the raw number of parameters.Because capacity grows much faster than information density, the parameters in a giant model become mathematically redundant and smoothly distributed.
+
+## Memorization vs. Reasoning
+They train transformer on normal text vs scrambeld text. They show that when they quant those two networks, the acc of the normal model is higher, indicating that it learned subprograms that can be compressed.
+
+## Ideas
+
+* Can we train a model that only lets GD search where the loss variance is 0 and the quant error is low?
+
+* Can we think of a model as a router for different algorithms, so at every token the most fitting algorithm is chosen?
+
+# Non-Vacuous Generalization Bounds for Large Language Models
+
+The Core Problem: Do LLMs Learn or Just Memorize?
+
+This paper provides the first non-vacuous generalization bounds for pretrained LLMs. In plain terms, the authors mathematically prove that LLMs genuinely generalize to unseen data beyond what they have memorized.
+
+## 3. The Three Main Challenges & How They Solved Them
+- Challenge A: Unbounded Loss FunctionsLLMs are evaluated using negative log-likelihood (NLL) loss (or cross-entropy) for next-token prediction. Because a model could theoretically assign a probability of 0 to a correct token, the loss can approach infinity (it is unbounded). Most classical statistical learning theories require the loss to be bounded (e.g., between 0 and 1).  The Solution: The authors introduced a prediction smoothing technique. By mixing the model’s predictions with a uniform distribution (adding a tiny bit of noise), they successfully capped the maximum possible loss, enabling the application of PAC-Bayesian and compression-based bound frameworks without destroying the model's actual performance
+
+- Challenge B: Training on Massive Datasets is Slow to Compute.
+The Solution: The authors derived a subsampling-based bound. They mathematically proved that you can calculate the bound using just a randomly sampled subset of the data while maintaining strict mathematical validity.
+
+- Challenge C: Too Many Parameters
+Compression-based generalization bounds dictate that a model's description (its size in bits) must be significantly smaller than the size of the dataset. Because LLMs have hundreds of millions or billions of parameters, compressing them enough to satisfy this rule
+The Solution: They invented SubLoRA. This is a novel, low-dimensional nonlinear parameterization method that combines LoRA with linear subspace training. SubLoRA forces the model to learn within a tightly constrained, highly compressed mathematical subspace from the very beginning of its training
+
+-> When comparing smaller models to larger models trained under the same SubLoRA conditions, the larger models achieved tighter, lower generalization bounds.
+-> This provides empirical proof for a massive theoretical claim: larger neural networks are inherently more efficient at discovering and compressing the underlying structure of data, rather than just using their extra capacity to memorize text.
+
+Also pretrained LLMs achieve significantly tighter generalization bounds than those trained from scrathc
+
+## Sublora
+Lora training, but additionally restrict to learn only within a low-dim space such as a line or a plane inside the parameter space
+
+## Notes
+So its actually not the neccessarly the largeness of the model in itself that helps generalization, instead the largness of the model helps for a better GD that finds a simpler solution
+-> Can one make GD better in other ways? 
+
+* They note that the Sublora trained model produced worse text. Sublora might be better if we allow for more elaborate geometric structures such as the goodfire stuff.

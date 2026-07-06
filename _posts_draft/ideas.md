@@ -293,3 +293,46 @@ can we do smth when we have few input variables, and then we just have a massive
 
 #
 An algorithm is independent of data. howver llms are very dependent of data. how to construct smth similar that is independent of data? a few tokens that always get uniform token as input, then other tokens can depend on them? maybe thats a better seperation? 
+
+#
+Train a nn to have the same loss for al training examples and tokens. then move down only in the path where the the loss is always the same for all token.
+
+#
+Simiallry, train a model to have same loss for different levels of quantization. Or can we train such that we fix that the model must have the same loss for different levels of quantization/compression? so we can still search in the big space but we reject samples that can not be compressed. Difference to QAT? 
+
+#
+Can we train a model that has access to a text corpus and learn to query it like a database? so the model never really has to store in weight, it can just use computation from the data. Can this be done for ARC?
+
+#
+"its not about solving a problem, its about while solving a problem to figure out smth that helps with other tasks. Like Tao said for math. or like epipliexity"
+How about we construct a game. one model generetes arc data, the other trains on it. so they have this continous game going, and the only thing they get as input is the complete loss of all the train examples. (but diff to just rl/es with complete loss?)
+
+# 
+It seems like humans always have a goal in mind, so a loss function/reward function. And then optimize for it until they are satsifed. can we do the same with a model? when it first gets a prompt it constructs its own reward function, then optimizes for it. Then it compares to ground truth. That way, with data we optimize not modle behavior but the models ability to construct reward function
+
+#
+What if we dont train a model to have high loss and instead we train a model to make a function that has a arbitrary loss value? this is a much harder task I assume, especially for combinations where the loss value needs to be the same for all tokens. Input is then loss value(for each token)+normal input, output is diff to loss value.
+
+#
+Its not neccessarly that for generalization we need a model that is compressed, but we need a model that is compressible... So the calculations it does might still be complicated? yet its simple idk
+
+#
+Do Literature search on the core differences between memorization and reasoning and then train for that
+-> M
+
+#
+What I done before, training with arc data but also with a lot of other data to force the llm to find a simple solution to the data... just with more training time? maybe train for longer on the examples so nn really has to memorize...
+also maybe first train on arc data to get loss 0, then just train such that loss also stays at 0
+-> more interestingly, are there scaling laws when we add new random data?
+
+#
+https://gemini.google.com/app/cfd40359cffedd84?hl=de when compressing a model, memorized facts deteriote fast, while reasoning is more compressible.
+-> can we do a curriculum of first training, then compressing, then training again etc etc?
+
+#
+We can actually see a model as a addition of matricies: A + B + C or maybe also as a matrix product A * B * C, because this is what training does basically.
+1. Can this be done with input data? can we first do input like A * Input such that we then get the W with which we do normal training? maybe transformer does that already or fast weight adjacent. but that is kinda like "choosing the algo" vs "computation of the algo" maybe seperating that would be good.
+2. Can we train with A + B so we train all those weights, but then during inference we only use the combination? Like lora but expanding parameters instead of reducing them. so we have more paramters to train basically, idea that that way a simpler slution can be found but after we can easily compress. Does this even make sense?
+#
+Can we start with a highly compressed network, ie we only allow for 100 bits but then we complexify through lookups and loops etc?
+(each matmul is kinda a lookup and then linear combination?...)
