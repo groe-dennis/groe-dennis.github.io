@@ -2300,3 +2300,205 @@ So its actually not the neccessarly the largeness of the model in itself that he
 -> Can one make GD better in other ways? 
 
 * They note that the Sublora trained model produced worse text. Sublora might be better if we allow for more elaborate geometric structures such as the goodfire stuff.
+
+
+# Function Vectors in Large Language Models
+It explores a fundamental mystery of modern AI: How do Large Language Models (LLMs) perform In-Context Learning (ICL)? When you give an LLM a few examples (e.g., Apple -> Red, Banana -> Yellow, Lime -> ?), how does it understand the underlying "function" and apply it to the new input?
+
+the authors discovered that when an LLM reads a prompt containing examples of a specific task, it does not just look back at those examples at the very end. Instead, during the middle layers of the network, a tiny subset of attention heads packages the abstract rule of the task into a compact, single vector.  The authors call this a Function Vector (FV). It acts as an internal macro or command that tells the rest of the model, "Hey, whatever input comes next, apply this specific rule to it."  
+
+Historically, ICL was viewed as a bit of black box—some theorized the model was implicitly fine-tuning itself on the fly, while others thought it was just a massive copying mechanism.
+
+This paper provides direct evidence of functional modularity inside LLMs. It shows that models naturally compress abstract tasks into discrete, steerable vectors. 
+
+## How they found the vectors
+
+2. How Did They Find and Extract Them?To find these vectors, the researchers used a technique called Causal Mediation Analysis.  Pinpointing the Heads: They ran prompts for various tasks (like translating English to French, changing words to plural, or naming country capitals) and carefully patched or blocked different attention heads to see which ones broke the model's ability to do the task. They found that a small, specific set of attention heads in the middle layers are overwhelmingly responsible for moving the "task rule" forward.  
+
+Creating the Vector: Once they identified these "causal heads," they took the average mathematical output of these heads across several examples of a task and combined them into a single vector ($v_t$).  
+
+## Proof by steering
+hey gave the LLM a completely blank slate or a natural text sentence with zero examples (e.g., just the word "Germany" or "Laptop").  
+Right in the middle layers of processing, they manually injected the extracted Function Vector into the model's hidden states.
+The Result: Even though the model had seen no examples, injecting the "Capital" FV caused it to immediately output "Berlin". Injecting the "Plural" FV caused it to output "Laptops".
+
+## Properties of FV
+
+* Layer Specificity: FVs are highly effective when injected into the middle layers of an LLM. However, if you try to inject them into the very late layers, their effect drops to near zero. This indicates that the later layers are reserved for formatting the actual token output, while the middle layers handle the abstract reasoning.
+
+* Vector Algebra (Compositionality): Much like how word embeddings famously allow math (e.g., King - Man + Woman = Queen), the researchers found you can do algebra with functions. For instance, adding two different FVs together can sometimes force the model to execute a complex, multi-step composite task.
+
+* More than just an Output Bias: The researchers checked whether a "Capital" vector just made the model shout out random city names. They found that while the vector does contain information about the output category, it explicitly contains the algorithmic mapping connecting the input to the output.
+
+## Notes
+* Interesting. So a model might not look back all the time in a few shot setting and instead create a function. Makes sense actually the function is kinda needed to do computation. So in general prompt-> function -> function application with new input -> related to seeing transformers as fast weight
+-> so can we imagine maybe as a transformer having a list of algorithms. And with a a prompt the model decides on a linear combination (or any combination) of those algorithms and then this resulting one is applied.
+-> so bascially an llm learns functions and for new input it routes them
+
+# Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models
+
+## Core Concept: The "Engram" Architecture
+The Problem: Traditional Transformers waste expensive computational power using deep reasoning layers to reconstruct static facts, local patterns, and idioms.
+
+The Solution: Conditional Memory. It adds a massive lookup table (the "Engram" module) to handle memory storage, leaving the Transformer layers free to focus purely on complex reasoning.
+
+## How It Works (The 3-Step Process)
+For every single token the model processes, it executes the following loop:
+
+O(1) Suffix Lookup: The model takes the immediate history (parallel 2-gram and 3-gram windows) and runs them through a fixed mathematical hash function. It instantly pulls a static memory vector out of a massive table.
+
+Context-Aware Gating: The active Transformer layers evaluate the whole sentence context and generate a gate score between 0 and 1.
+
+Information Fusion:
+
+If relevant: The gate opens, and the memory vector is injected directly into the network.
+
+If it's a false alarm (hash collision/wrong context): The gate closes, the memory is discarded, and the model relies on its normal layers.
+
+## Key Takeaways & Breakthroughs
+The 25% Sweet Spot: Researchers discovered a U-shaped scaling law for parameters. The optimal model setup allocates roughly 20% to 25% of its sparse budget to Engram memory, and the rest to Mixture-of-Experts (MoE) computing.
+
+Massive Performance Leaps: Under identical computing budgets, adding Engram drastically improved factual knowledge (MMLU), long-context retrieval (Needle in a Haystack jumped from 84% to 97%), and unexpectedly boosted reasoning and coding scores.
+
+Why Reasoning Improved: Offloading static memory retrieval to the Engram early in the network (around Layer 2) "de-noises" the deeper attention heads, giving them more room to handle logic.
+
+Hardware Efficiency: Because the hash is deterministic and relies only on text tokens, the system can asynchronously prefetch memories from cheap Host CPU RAM into the GPU just in time, resulting in massive scaling with zero inference speed penalties.
+
+# A Kernel-Based View of Language Model Fine-Tuning
+The Overparameterization Paradox: Classical statistics state that training a model with more parameters than data points leads to massive overfitting, yet LLMs fine-tune beautifully on tiny datasets.
+
+The NTK Microscope: Theorists proved that as a neural network gets infinitely wide (massive parameter count), its training dynamics smooth out. Every weight moves only an infinitesimal amount (Lazy Training), transforming a chaotic training maze into a flat, predictable Neural Tangent Kernel (NTK).
+
+Why LoRA Works (Kernel Taming): * While full fine-tuning lets an LLM warp all dimensions (risking chaotic changes and catastrophic forgetting), LoRA mathematically restricts updates to a tiny, flat, low-rank subspace (a 2D sheet cutting through a 100D sphere).
+
+This forces the model’s internal NTK to shed its high-dimensional noise and become "clean." By taming the kernel, LoRA stabilizes the model, preventing it from forgetting its base knowledge while allowing it to learn new tasks efficiently from a handful of examples.
+
+# Verbalizable Representations Form a Global Workspace in Language Models https://transformer-circuits.pub/2026/workspace/index.html
+
+Ant research on J-Space, i.e. internal concepts that have priviliged access 
+
+" Such thoughts can be articulated out loud, deliberately held in mind, and brought to bear on whatever task the moment demands. This distinction, between our accessible thoughts and our unconscious processing, is perhaps the most striking feature of human cognition."
+
+"Specifically, we observe that language models maintain a privileged set of internal representations, available for report, modulation, and flexible internal reasoning, atop a much larger volume of automatic processing. We identify these representations using a new interpretability technique, which surfaces the concepts a model is poised to verbalize at any point in its processing."
+
+"Thus, our question becomes: within LLMs’ repertoire of vector representations, is there a privileged subset that plays a computational role analogous to the global workspace?"
+
+We identified them by searching for representations satisfying the first property, namely those that are verbalizable. We then discovered that, rather surprisingly, they satisfy the others:
+
+* Verbal report. When the model is asked what it is thinking about, it names concepts represented in the workspace. Swapping one active workspace vector for another changes its answer to match.
+* Directed modulation. When instructed to hold a concept in mind, or perform mental calculations, the model is capable of activating and computing with workspace vectors, independent of its outputs. In addition, information that is not typically represented in the workspace can be pulled in when the task requires it.
+* Internal reasoning. Workspace vectors can be used to represent the value of intermediate computations, when the model chains inferential steps or composes plans, and intervening on them is sufficient to redirect the conclusion.
+* Flexible generalization. The same representation serves as a valid argument to many different downstream computations. In other words, a workspace vector lifted from one context and placed in another is correctly operated on by whatever function the new context supplies.
+* Selectivity. The workspace comprises a small subset of the total representational content of the model’s activations. It is required for only a fraction of the model’s behavior, and in particular is not involved in pervasive, routine processing like text parsing or grammatical fluency.
+
+## The Jacobian Lens and the J-space
+
+Designed to identify internal representations that are readily available for verbal report.
+
+"For each token in the model’s vocabulary, the Jacobian lens identifies a vector representation that encodes the potential for the model to verbalize that token in the future."
+
+"Concretely, it computes, for each layer, the average linearized effect of an activation on the model's likelihood of producing a particular token (now or in the future), averaging over a large corpus of contexts (see Methods for details). The averaging step is key, as it distinguishes representations that are verbalizable—poised to be spoken about, should the occasion arise—from those that merely happen to be verbalized in one particular context."
+
+* Workspace is only in the middle layers
+* Workspace is quite small and only a few concepts active at one time
+* Broadcast format: J-lens vectors compose with many upstream output weights and downstream input weights
+
+"Our findings suggest that the J-space achieves many of the functional properties of the global workspace in the brain, while sharing only some of its architectural properties"
+
+* counterfactual reflection training, which seeks to implant a set of ethical behavioral principles into the model’s workspace in relevant contexts, by training it to articulate those principles if it were interrupted and asked to reflect 
+We find that this training measurably improves model behavior in the original, uninterrupted contexts, despite no direct training of the ethical behavior taking place. And indeed we find that, after training, the J-space in these contexts is populated with concepts related to the reflections (ethical, honest, integrity), 
+
+## Methods
+
+The basic idea is to characterize an intermediate activation vector by its first-order causal effect on the model's outputs, over a broad distribution of potential contexts.
+
+So, the idea is to find the tokens that are verbalizable by checking if hidden state h is there, what causally can come as output token. 
+
+To a first order, this is a linear relationship captured by the Jacobian between hidden state and output state. Basically it measures what happens to the output state if the hidden state is slightly changed, so how sensitive it is. High sensitivity means that the output token is likely to be verbalized given the hidden vector.
+
+This is done as an average over a diverse dataset, to distinguish between particularities of a prompt vs what actually can be said over the whole pretrain distributon.
+
+This gives the Averaged Jacobian, which they call the Lens. For a new hidden activation this lens can be applied by multiplication, effectively skipping all later layers and replacing with the linear approximation of the Jacobian. https://transformer-circuits.pub/2026/workspace/png/img_1b62b10ab235e6e7.png
+
+### More on the Jacobian
+
+I was used to seeing backprop as "to make loss smaller, we need to adjust weights like that". But a better view is to say "how small change in weights change the loss". So backprop does not need a loss function it can also just work on the raw output tokens. So it captures how sensitive a element in the output vector is to changes in the input vector. 
+Basically instead of $$\frac{\partial \text{Loss}}{\partial W} = \frac{\partial \text{Loss}}{\partial h_{\text{final}}} \times \frac{\partial h_{\text{final}}}{\partial h_{\ell+1}} \times \frac{\partial h_{\ell+1}}{\partial h_{\ell}} \times \dots \times \frac{\partial h_{\text{layer}}}{\partial W}$$
+
+we do
+In the Jacobian Lens, we stop short and change the starting point. We strip away the Loss derivative ($\frac{\partial \text{Loss}}{\partial h_{\text{final}}}$) and the weight derivative at the end:$$\frac{\partial h_{\text{final}}}{\partial h_\ell} = \frac{\partial h_{\text{final}}}{\partial h_{\ell+1}} \times \frac{\partial h_{\ell+1}}{\partial h_{\ell}}$$
+
+## Comparison with linear probes/correlation
+I was thinking: Ok they want a method to determine which concepts in a hidden vector are verbalizable. They have a dataset of prompts. Why not just collect hidden vector - output vector combinations and then train a model with that/calculate correlation.
+
+Well as it turns out the reasoning is that correlation/nn only captures correlation, and the Jacobian is the average local sensitivity and thereby its a direct statement about the model itself and not a statistical inference. 
+
+However, for gaussian inputs those to measures are the same: (Steins Lemma)
+Cov(x, y) = σₓ² · E[f′(x)]
+Rearranged, this means the ordinary least-squares regression slope of y on x (which is what correlation is really encoding, once you rescale by σ_y/σₓ) equals the average gradient of f, regardless of how nonlinear f is:
+
+(The Jacobian measures literal mathematical dependency via the chain rule. It asks: "If I physically wiggle this specific hidden coordinate right now, does that force the final layer to move?")
+
+## Notes
+* One characteristic of a workspace representation is generalization, i.e. ". The same representation serves as a valid argument to many different downstream computations". In ARC, can we identify concepts and then check if they are used in all 3 examples? by moving them around? and if not, its not a good representation. 
+-> in a causal way. Ie the function of the llm should stay the same between examples only the input should change...
+-> now that I think of it: transformers are fast weight generators. for our arc example however we should require that for one layer all tokens should apply the same algorithmic step (or no step) and also the same algo step for each example. can we force the architecture to do so?
+
+-> for each layer, insert a token that identifies the layer and the first layer in the group only has access to that token so it can only chose an algo based on that and not on the input. that is the algo chooser then and then after the input can be fed.
+
+
+* Do I understand correctly that this reflection training in itself leads to ethical behavior? Like maybe also in humans?
+
+* A model is correlational, a derivate is causal? can we use that in nn desgin? design a derivative or smth? or just stuff taht comes directly from a trained model without further tuning?
+
+* Does it address our specific shortcoming (cancellation under non-monotonicity, the x² example)? Not directly, as far as this excerpt shows. The paper doesn't discuss variance-of-gradient, curvature terms, or higher-order Stein-type corrections — it stays in the "first-order, averaged" regime we identified as blind to non-monotonic effects. A concept whose effect on the output flips sign across contexts (helps verbalization in some contexts, hurts it in others) could plausibly average toward zero in J_ℓ even if it's causally important in each individual context — the same cancellation pathology we described for f(x)=x².
+
+* Okay so I was wondering what would happen if a model is trained only with this Jacobian approach and not a loss, so just in the gradient leaving the last multiplcation away. Gemini says: 
+Scenario A: Maximizing the Jacobian (The Exploding Whisper)If you train the model to maximize $\frac{\partial h_{\text{final}}}{\partial h_\ell}$, you are telling the model: "Make the final layer hyper-sensitive to the early layers." * The Result: The model’s weights will blow up to infinity. A tiny microscopic flutter of static noise at Layer 1 will be amplified exponentially by every layer until the final layer outputs completely chaotic, high-voltage gibberish.Scenario B: Minimizing the Jacobian (The Silent Wall)If you train the model to minimize the Jacobian (make it 0), you are telling the model: "Make sure early layers have absolutely zero effect on later layers."The Result: The weights will all shrink to zero. Every layer will become a completely insulated wall. You could feed the model the most beautiful poetry, and by Layer 2, the signal would be entirely dead.
+
+-> Now this seems very interesting. Seems related to weight decay. Seems related to optimal processing, ie computation at the edge of chaos. Can we use this in training, comboined with normal loss training, so it doesnt go in either direction and stays at the edge of chaos bascially? Or maybe that one input element is only allowed to be senstive for one output element or smth. we could try different methods to see if one works as a good regualrizer.
+-> Ok it seems this is called Jacobian Regularization haah
+
+
+# GrokAlign: Geometric Characterisation and Acceleration of Grokking
+(In the introduction, many intersting papers are linked)
+
+Prior research argued that grokking happens when a network transitions from a simple "linear/lazy learning" phase to a "feature learning" phase, reshaping its boundary structures.  This paper provides a new mathematical explanation by analyzing the network's Jacobian matrix (a matrix of all first-order partial derivatives of the network's outputs with respect to its inputs/parameters). Specifically:  The authors show that grokking is structurally embedded within the network’s Jacobian.  They prove that if you align the network's Jacobians with the structure of the training data (maximizing their cosine similarity), the network is guaranteed to achieve grokking, provided the Jacobian matrix satisfies a low-rank assumption (meaning it focuses on a compact set of core features).  
+
+## Jacobian Regularisation Explains Grokking
+
+Network $\text{argmax}(f(x))$
+
+The Jacobian matrix, denoted as $J_x(f)$, represents the sensitivity of the network's outputs relative to its inputs at a specific point $x$. It captures how the network's predictions change if you slightly nudge the input.
+
+* Definition 1: Jacobian-Aligned
+The authors define a network as being Jacobian-aligned at a point $x$ if its Jacobian matrix can be written as an outer product of two vectors:$$J_x(f) = c x^\top$$
+->Usually, a Jacobian is a complex matrix where every output class responds differently to every feature of the input. If a network is Jacobian-aligned, it means the entire matrix collapses into a highly simplified, structured form. The network's outputs become uniformly sensitive only to the specific directions defined by the input data vector $x$ itself.
+
+* To prove their theories, the authors look at continuous piecewise affine networks. This category includes most modern architectures that use ReLU
+-> A ReLU network doesn't create a perfectly smooth, curved mathematical surface. Instead, it chops up the high-dimensional input space into a vast collection of flat, convex distinct regions (polytopes). Inside any single region $\omega_x$, the network behaves exactly like a simple linear equation:$$f(x) = A_{\omega_x}x + B_{\omega_x}$$
+Where:$A_{\omega_x}$ is a matrix acting as the local weights for that region.$B_{\omega_x}$ is the bias vector for that region.Crucially, inside this region, the Jacobian is exactly equal to this matrix: $J_x(f) = A_{\omega_x}$.3 (because its like taking the derivative of a linear function)
+
+
+* Theorem 2: if you train a network to minimize a standard loss function (like cross-entropy or mean-squared error) under two strict constraints:The Frobenius norm (the total magnitude) of the Jacobian is bounded: $\|J_{x_p}(f)\|_F^2 \le \alpha$The local bias term is zero: $B_{\omega_x} = 0$Then the mathematical solution that minimizes the loss is guaranteed to be Jacobian-aligned ($J_{x_p}(f) = c x^\top$).
+(so basically if you are training with wd, thus restricting the norm, eventually you will end up jacobian aligned)
+
+* Theorem 3: if the local weight matrix $A_{\omega_x}$ is rank-one (meaning it is highly compressed and focuses entirely on a single subspace of features) and the bias is zero, then setting $A_{\omega_x} = c x^\top$ yields the most robust local mapping possible against $\ell_2$ input perturbations.
+The Catch: In practice, standard deep network training naturally biases models toward low-rank weight matrices over time.
+The Conclusion: Because networks naturally drift toward low-rank states, achieving true robustness requires the network to achieve Jacobian alignment.
+
+### Explanation:
+For those kinds of functions, for a area around x, the function is linear. So a Hyperplane.
+
+Normal nn before alignment is complex. Normally, a network's Jacobian is a massive table of arbitrary numbers.If you feed an input $x$ into a regular network, its internal weights can take a messy path to get to the correct output. The network can say: "I will use feature #1 to classify point A, feature #2 to classify point B, and feature #3 to classify point C."This is memorization.
+
+But when its Jacobian aligned: Because the local linear region $A_{\omega_x}$ is exactly equal to the Jacobian ($A_{\omega_x} = c x^\top$) (simple math, ableitung), look at what happens when the network computes its output for that region ($f(x) = A_{\omega_x}x$):$$f(x) = (c x^\top) x$$$$f(x) = c (x^\top x)$$$$f(x) = c \|x\|^2$$
+
+
+## 3 The Centroid Alignment Perspective
+
+
+## Notes
+* It seems like one could characterize a model training from a different perspective: not to minimize loss, but to minimize the norm given the contraint of low loss. this makes the training seem a bit dumb because norm minmzaation with wd is i think bascially randomly walking around, its not such a directed way like the gradient of the function? maybe there are better ways to find a simple solution given a loss contraint.
+
+* Interesting to see a network as this patching of linear areas. Even more interesting that in the jac aligned, a nn is basically just choosing a vector c for every input (because $$f(x) = c \|x\|^2$$). So it could be seen as if the nn just has a larger vocab and maps each token to one of those "pseudo-vocabs". Then each pseudo-vocab is decoded to the actual vocab via argmax. Wow interesting.

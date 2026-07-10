@@ -336,3 +336,45 @@ We can actually see a model as a addition of matricies: A + B + C or maybe also 
 #
 Can we start with a highly compressed network, ie we only allow for 100 bits but then we complexify through lookups and loops etc?
 (each matmul is kinda a lookup and then linear combination?...)
+
+#
+I wonder if complexity is about the learnned neurons or about all neurons.
+Now that I think of it, if we keep the original inits, we can compress easily via the original PRN.
+So idea: A nn that is Ax1 + Bx2 + ... etc and we keep adding more x until we find a way to solve the task. that way we know exactly how many bits we trained.
+
+# 
+Ask model:
+* What is a experiment that is in line with the most intuitions here
+* given my intutions which information will I find interesting also
+
+#
+Oh can we take n videos and then use them as the "random netwokrs A B,..." and only learn the x such that then we can use the videos as a prediction for new input?
+
+-> actually: So a text corpus bascically contains a lot of complex forward passes. we could make a model that can use them as a possibily yet still have normal computation. so they are only subprograms that can be called.
+
+#
+So if model is a combination of functions and basically a router that applies functions: In the arc examples we already have functions. How about we make a model that, in order to predict a token, it maps a token to any token of the input sequence, then we get the output out and then it needs to map back. This seems also quite interpretable. and we could make it map to all examples at the same time and take the average so its forced to use all 3 examples. so the model bascially does a bassis change or smth, like there is in math (A=PDP−1). could even make it that we only model P and then oinvert it for the backtransform. or we let model choose index 1 and 2 and then see what index 
+
+#
+Like the GD history, so is the res stream with skip connections a matrix addition
+so the GD history is basically a very big model? 
+wonder: lets say we have weights W and then calculate gradients G. can we then find a model that modles the GD step? ie input W, output G. I guess there are weights for that, but well many of them will not reflect the real gradient calculation and instead some overfitting calculation.
+
+#
+Say we have a correct algo for an ARC task. Can we train a model to grok, by only giving it sets of random input - output of real algo? 
+then we can train a model, and use it as a "pseudo correct" and train another model with it. if the other model gets good acc, it means the first one is correct. if not, use that as a loss signal.
+Basically, we only transfer the generalzing ability of the model... random input makes sure the model cnat cheat by generating input output pairs that are close to the real images
+or we could just let it generate but restrict in another way...
+
+#
+How about we have a model A and then a model B which goal it is to understand the model A. Doing so in a causal way. ie B must do interventions in A and predict the outcome. 
+or more generally: nn do correlations. can we incorperate causal methods in the training of llms such that they learn in a casual and not in a correlational way? i guess related to suttons questions, where a model is inside a world and must learn to adjust it causally, not just be a passive observer. Is that basically what RL does? or i guess some active inference training procedure
+
+-> maybe: one model that can do actions, the other must model the results of those actions. first model tries to maximize loss second to minimize.
+
+#
+Agentic system where each agent represents a paper and then they need to do hypothesis and experiments combining approches from papers and not more. so restricted
+
+#
+It seems that restriction is the essence of intelligence and creativity. Can we have one model train and another model restrict its weights/optimizier etc
+-> wait what about one model can 0 out or lessen the weights of another model. we train the other model and observe its test loss. then we optimize the first model with that. maybe that is the most optimla way to use the data, while maybe with the 0ing we can still introduce spurious cues this model is more restricted...
