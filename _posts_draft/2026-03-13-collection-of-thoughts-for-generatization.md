@@ -2487,18 +2487,68 @@ Where:$A_{\omega_x}$ is a matrix acting as the local weights for that region.$B_
 The Catch: In practice, standard deep network training naturally biases models toward low-rank weight matrices over time.
 The Conclusion: Because networks naturally drift toward low-rank states, achieving true robustness requires the network to achieve Jacobian alignment.
 
-### Explanation:
+### Explanation 1:
 For those kinds of functions, for a area around x, the function is linear. So a Hyperplane.
 
 Normal nn before alignment is complex. Normally, a network's Jacobian is a massive table of arbitrary numbers.If you feed an input $x$ into a regular network, its internal weights can take a messy path to get to the correct output. The network can say: "I will use feature #1 to classify point A, feature #2 to classify point B, and feature #3 to classify point C."This is memorization.
 
 But when its Jacobian aligned: Because the local linear region $A_{\omega_x}$ is exactly equal to the Jacobian ($A_{\omega_x} = c x^\top$) (simple math, ableitung), look at what happens when the network computes its output for that region ($f(x) = A_{\omega_x}x$):$$f(x) = (c x^\top) x$$$$f(x) = c (x^\top x)$$$$f(x) = c \|x\|^2$$
 
+### Explanation 2:
+So: a nn is a patchwork of linear functions. (he number of these patches scales as $O\left(\left(\frac{N}{L}\right)^{Ld}\right)$, where $N$ is the number of neurons, $L$ is the depth, and $d$ is the input dimension.)
 
+In the non-jacobian algined, A and B is arbitray and as such it could be that inside the linear patch its very suspectible to small changes in x.
+
+(And we get jac algined because we restrict the norm via i.e. weight decay and thus theorem 2 says we get to jac alignment)
+
+However, when we are in the jac-aligned phase, $A_{\omega_x} = cx^\top$ and thus $$f(x) = (cx^\top)x = c\|x\|^2$$. Small changes here in x barely change the output. We bascially just defined c as the "vocab token" for this linear patch.
+
+The c's must kind match at their border region, because a nn is a continous function.
+Also, when we drive the norm down, we probaly can't have a distinct c for every linear patch, instead we only have a "small" set of c. Those c are then basically "pseudo vocab tokens" that are then decoded to real tokens via argmax. So in this view a transformer doesn't predict a arbitrary prob distribution for a token, it predicts a "pseudo token". 
+
+Ok now, with theorem 3 we then know that jac aligned is the most robust to pertubations. Now they argue that is then also the grokking phase. They don't provide a theoretical argument as far as I understand, though have empirical evidence.
+
+-> So GrokAlign is used to lower/bound the Jacobian norm
 ## 3 The Centroid Alignment Perspective
+
+Calculating the full Jacobian matrix ($J_x$) for every single training point during a model's run is computationally brutal. It destroys training speed. To fix this, the authors introduce Centroids, a geometric simplification that summarizes the Jacobian into a single vector.
+
+* As we established, a ReLU network chops the input space into millions of local linear regions (convex polytopes). Every patch has its own local Jacobian matrix $J_x(f)$.Theorem 4 introduces a way to condense that whole matrix into a single vector, called the centroid ($\mu_x$), by multiplying the transposed Jacobian by a vector of all ones ($1$):$$\mu_x = (J_x(f))^\top \mathbf{1}$$
+-> Basically it summing up the rows in the Jacobian, so we don't know how every single output class behaves with changes in the input, but only the average output class.
+-> This can be calculated efficiently with the Jacobian-Vector-Product JVP
+-> Summarization mechanism in a ay that has an "elegant geometric interpretation"
+
+* Defintion 5: Centroid-Aligned: A network is centroid-aligned at a point $x$ if its centroid vector points in the exact same direction as the input vector itself:$$\mu_x = c x \quad \text{(for some scalar } c\text{)}$$
+
+* Proposition 6: A Jacobian-aligned deep network is centroid-aligned, If a network is Jacobian-aligned ($J_x = cx^\top$), it is guaranteed to be centroid-aligned. Centroid alignment is just a slightly relaxed, easier-to-calculate version of Jacobian alignment.
+
+* Link to Grokking via "Region Migration": 
+Before Grokking: The network places a dense cluster of tiny, chaotic linear patches directly on top of the training data points so it can memorize them.
+During Grokking: The network forces these linear regions to "migrate" away from the data points and stack up neatly along the decision boundaries instead.
+
+So memorization:To memorize a dataset, the network creates a dense, chaotic honeycomb of tiny tiles directly on top of the training data points.Each training data point gets its own tiny custom tile.Inside that tile, the local matrix $A$ is engineered to force a correct output for that specific point, but it tilts crazily. The local Jacobian is messy and high-rank.This is why it lacks robustness: if you nudge the input slightly, it slips out of that custom tile into a neighboring tile where the matrix $A$ points in a completely random direction.
+
+### Voronoi and Power Diagrams
+Standard Voronoi Diagram: You have a set of seed points. Every spot in the space belongs to the closest seed point based on standard Euclidean distance. 
+
+Power Diagram (Laguerre-Voronoi): This is a Voronoi diagram where the seeds have different "weights" or sizes. The boundary between two cells is determined not just by proximity, but by a "power distance" that factors in these weights. The boundaries are still straight lines (hyperplanes), but they get shifted based on the weights.
+
+Relationship to Relu:
+A single ReLU function is defined as:$$f(x) = \max(0, x)$$ (one side linear, the other 0)
+The boundary where this switch happens ($w^T x + b = 0$) is a hyperplane (a line in 2D, a flat plane in 3D, etc.).When you have a whole layer of ReLU neurons, you are essentially dropping a bunch of these flat hyperplanes into your input space
+
+Mathematically, it has been shown that the boundaries created by a layer of a ReLU network can be mapped identically to the boundaries of a Power Diagram.
+
+A relu network is a piecewise linear function. For those piecewise linear functions, the power diagram can be extracted with 
+If you know the local linear function $F(x) = A_i x + B_i$ for a region, its corresponding Power Diagram components are:Seed Position ($p_i$): $\frac{1}{2} A_i$Seed Weight ($w_i$): $B_i + \frac{1}{4} \|A_i\|^2$
+This must be done per region.
+
+also: The tiles are not uniform. Wherever the weights are changing rapidly or are very large, the hyperplanes pack tightly together, creating an ultra-dense cluster of microscopic tiles. Where weights are simple or uniform, the tiles stretch out into massive, yawning expanses.
 
 
 ## Notes
 * It seems like one could characterize a model training from a different perspective: not to minimize loss, but to minimize the norm given the contraint of low loss. this makes the training seem a bit dumb because norm minmzaation with wd is i think bascially randomly walking around, its not such a directed way like the gradient of the function? maybe there are better ways to find a simple solution given a loss contraint.
 
-* Interesting to see a network as this patching of linear areas. Even more interesting that in the jac aligned, a nn is basically just choosing a vector c for every input (because $$f(x) = c \|x\|^2$$). So it could be seen as if the nn just has a larger vocab and maps each token to one of those "pseudo-vocabs". Then each pseudo-vocab is decoded to the actual vocab via argmax. Wow interesting.
+* Interesting to see a network as this patching of linear areas. Even more interesting that in the jac aligned, a nn is basically just choosing a vector c for every input (because $$f(x) = c \|x\|^2$$). So it could be seen as if the nn just has a larger vocab and maps each token to one of those "pseudo-vocabs". Then each pseudo-vocab is decoded to the actual vocab via argmax. Wow interesting. This seems relevant to interpretabilty.
+
+* What would happen if we manually restrict the output of each layer to be one of a fixed set of pseudotokens? Then we automatically are in a jac-aligned phase?
