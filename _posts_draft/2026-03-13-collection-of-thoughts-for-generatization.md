@@ -2492,7 +2492,7 @@ For those kinds of functions, for a area around x, the function is linear. So a 
 
 Normal nn before alignment is complex. Normally, a network's Jacobian is a massive table of arbitrary numbers.If you feed an input $x$ into a regular network, its internal weights can take a messy path to get to the correct output. The network can say: "I will use feature #1 to classify point A, feature #2 to classify point B, and feature #3 to classify point C."This is memorization.
 
-But when its Jacobian aligned: Because the local linear region $A_{\omega_x}$ is exactly equal to the Jacobian ($A_{\omega_x} = c x^\top$) (simple math, ableitung), look at what happens when the network computes its output for that region ($f(x) = A_{\omega_x}x$):$$f(x) = (c x^\top) x$$$$f(x) = c (x^\top x)$$$$f(x) = c \|x\|^2$$
+But when its Jacobian aligned: Because the local linear region $A_{\omega_x}$ is exactly equal to the Jacobian ($A_{\omega_x} = c x^\top$) (simple math, ableitung), look at what happens when the network computes its output for that region $f(x) = A_{\omega_x}x$: $$f(x) = (c x^\top) x$$ $$f(x) = c (x^\top x)$$ $$f(x) = c \Vert{}x\Vert{}^2$$
 
 ### Explanation 2:
 So: a nn is a patchwork of linear functions. (he number of these patches scales as $O\left(\left(\frac{N}{L}\right)^{Ld}\right)$, where $N$ is the number of neurons, $L$ is the depth, and $d$ is the input dimension.)
@@ -2528,6 +2528,17 @@ During Grokking: The network forces these linear regions to "migrate" away from 
 
 So memorization:To memorize a dataset, the network creates a dense, chaotic honeycomb of tiny tiles directly on top of the training data points.Each training data point gets its own tiny custom tile.Inside that tile, the local matrix $A$ is engineered to force a correct output for that specific point, but it tilts crazily. The local Jacobian is messy and high-rank.This is why it lacks robustness: if you nudge the input slightly, it slips out of that custom tile into a neighboring tile where the matrix $A$ points in a completely random direction.
 
+----
+A centroid is literally the anchor point in the power diagram view
+
+If a network is centroid aligned, this means that the geometric anchor point of the tile points in the exact same directional ray as the data point $x$ itself. because $\mu_x = cx$ here c is a scalar.
+
+If you track the centroid vectors over time and see them suddenly lock into alignment with the data vectors, you are watching Region Migration happen in real-time. It tells you the tiles have successfully cleared away from the data points and expanded.
+
+Why is it the case that the centroids need to be aligned to the data vectors for grokking to occur? 
+-> Well I dont complety get it. however, i believe the story is that a stright line between two data points is the boundry with the lowest norm. And the boundtry is straight, if the centroids are a multiple of the data points, or else the line will at least be slightly off or ragged.
+
+
 ### Voronoi and Power Diagrams
 Standard Voronoi Diagram: You have a set of seed points. Every spot in the space belongs to the closest seed point based on standard Euclidean distance. 
 
@@ -2545,6 +2556,19 @@ This must be done per region.
 
 also: The tiles are not uniform. Wherever the weights are changing rapidly or are very large, the hyperplanes pack tightly together, creating an ultra-dense cluster of microscopic tiles. Where weights are simple or uniform, the tiles stretch out into massive, yawning expanses.
 
+## Relationship to NTK
+
+Let’s look at the "Smoking Gun" equation again:$$\partial_t (\langle x, \mu_x \rangle) = \eta \frac{1}{m} \sum_{p=1}^m \Theta(x, x_p) m_{x_p}$$To understand why this relates to migration, we have to look at what the Neural Tangent Kernel (NTK), $\Theta(x, x_p)$, actually measures. The NTK measures representational similarity. It asks: "If I update the network's weights to learn about training point $x_p$, how much does the network's output change at point $x$?"
+
+So I think:
+during ealry training if we take a trainstep, the prediction of other points in data space dont change much if we adapt the label for xp?
+because we have those tiny tiles and basically we only adapt the tiny tile? and later when we have big tiles and we change a label of a tile this affects a large area in input space? 
+
+Ah so this is an explanation for generalization: during early training with the many small tiles, adapating one tile, so one training example, does not change any other inputs, so also not those we want to generalize to.
+And in other ways, if we are in the grokking regime, a change in one tile also has changes to all related inputs.
+
+
+
 
 ## Notes
 * It seems like one could characterize a model training from a different perspective: not to minimize loss, but to minimize the norm given the contraint of low loss. this makes the training seem a bit dumb because norm minmzaation with wd is i think bascially randomly walking around, its not such a directed way like the gradient of the function? maybe there are better ways to find a simple solution given a loss contraint.
@@ -2552,3 +2576,7 @@ also: The tiles are not uniform. Wherever the weights are changing rapidly or ar
 * Interesting to see a network as this patching of linear areas. Even more interesting that in the jac aligned, a nn is basically just choosing a vector c for every input (because $$f(x) = c \|x\|^2$$). So it could be seen as if the nn just has a larger vocab and maps each token to one of those "pseudo-vocabs". Then each pseudo-vocab is decoded to the actual vocab via argmax. Wow interesting. This seems relevant to interpretabilty.
 
 * What would happen if we manually restrict the output of each layer to be one of a fixed set of pseudotokens? Then we automatically are in a jac-aligned phase?
+
+* This tiling is nice, I think thought that it is 3-dimensional in the sense that each point in input space is associated with n tiles, so its multiple mosaics stacked
+
+* Also a nice perspective with the tiling: Seeing it as a "zusammenhalt". If we have a generalizing tile, then if we change the label of a tile (or take a hypothetical small step), this changes all datapoints inside this class. With that we can do testing maybe? Like if we do a small step in any direction for a input of class x, we also want the label for all other inputs of class x to change. because if the point is inside a tile, changing it will change the tile basically.

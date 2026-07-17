@@ -213,3 +213,22 @@ Microphone 1: $0.6 \times \text{Speaker A} + 0.4 \times \text{Speaker B}$Microph
 CA takes these mixed signals and separates them back into the original, pure audio streams of Speaker A and Speaker B.
 
 By the Central Limit Theorem, when you mix independent signals together, the mixture looks more Gaussian than the original signals. ICA exploits this in reverse: it uses Projection Pursuit to rotate the mixed data until the resulting axes are as non-Gaussian as possible. When non-Gaussianity is maximized, the original independent signals cleanly separate.
+
+# Kernel Trick
+
+The Problem: Many datasets are linearly inseparable in their original space (e.g., points arranged in concentric circles in 2D). They require mapping into a higher-dimensional space ($\Phi(x)$) where a linear boundary (a hyperplane) can separate them.The "Trick": Manually transforming data into high-dimensional spaces is computationally expensive or impossible (e.g., infinite dimensions). 
+
+A Kernel Function ($K(x, y)$) bypasses this by calculating the similarity score (the dot product) of those points in the higher-dimensional space using only their original, lower-dimensional coordinates. 
+
+## Disadvantages
+
+Quadratic Complexity and overfitting (?)
+# Kernels/Linear Attention
+Standard Softmax self-attention $\text{Softmax}(QK^T)V$ computes a giant token-to-token similarity matrix, incurring an expensive $O(N^2)$ quadratic bottleneck over long text lengths.The Kernel Fix: Researchers realized Softmax attention is a similarity kernel. By replacing Softmax with explicit, linear kernel functions ($K(q, k) = \phi(q)\phi(k)^T$), they flipped the matrix multiplication order, dropping the complexity to linear $O(N)$.
+
+
+1. Kernel functions, by trying to be computationally easy, usually drop the exponential Softmax. Instead, they smooth everything out into a broad average.
+
+The Result: Linear attention kernels suffer from "fuzzy vision." Instead of perfectly recalling a specific word, they return a blurred mixture of the target word and the words next to it.
+
+2. The Compression Performance WallIn standard Transformers, as you type a longer prompt, the "KV Cache" grows. The model preserves every single past token explicitly.  In a linear attention kernel, because of how the associative law flips the math, the past is compressed into a fixed-size memory matrix (a hidden state). As the text grows from 1,000 to 32,000 tokens, the size of that memory matrix stays exactly the same.  The Problem: You cannot perfectly fit a 100-page book into a 1-page summary without losing information. As context grows, linear attention hits a "performance wall" where its perplexity (accuracy) plateaus or degrades, whereas standard attention keeps getting smarter the more context it sees.
