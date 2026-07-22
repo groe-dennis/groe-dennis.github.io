@@ -2567,7 +2567,17 @@ because we have those tiny tiles and basically we only adapt the tiny tile? and 
 Ah so this is an explanation for generalization: during early training with the many small tiles, adapating one tile, so one training example, does not change any other inputs, so also not those we want to generalize to.
 And in other ways, if we are in the grokking regime, a change in one tile also has changes to all related inputs.
 
+## GrokAlign algorithm
 
+$$\text{Loss}_{\text{GrokAlign}} = \text{Loss}_{\text{Task}} + \lambda \left( \Vert{}J_x\Vert{}_F^2 + \Vert{}b_x\Vert{}_2^2 \right)$$
+
+Step A: Erasing the Biases ($\Vert{}b_x\Vert{}_2^2 \to 0$)
+
+Step B: Squeezing the Slopes ($\Vert{}J_x\Vert{}_F^2 \to 0$)By penalizing the total energy of the Jacobian matrix, the optimizer is blocked from creating a high-rank, chaotic "broken glass" landscape of rapidly changing slopes from tile to tile.
+
+-> forces directly to jacobian alignment
+-> Under normal training conditions, a network spends thousands of epochs wandering blindly in the dark before its weight configurations happen to compress enough to trigger region migration and generalization.
+Because GrokAlign directly measures and punishes unaligned geometry at every step, it forces Region Migration to happen almost immediately.
 
 
 ## Notes
@@ -2580,3 +2590,40 @@ And in other ways, if we are in the grokking regime, a change in one tile also h
 * This tiling is nice, I think thought that it is 3-dimensional in the sense that each point in input space is associated with n tiles, so its multiple mosaics stacked
 
 * Also a nice perspective with the tiling: Seeing it as a "zusammenhalt". If we have a generalizing tile, then if we change the label of a tile (or take a hypothetical small step), this changes all datapoints inside this class. With that we can do testing maybe? Like if we do a small step in any direction for a input of class x, we also want the label for all other inputs of class x to change. because if the point is inside a tile, changing it will change the tile basically.
+
+
+# https://alexzhang13.github.io/blog/2026/mgh/
+
+Proposes that current LLM capability is enough, but they need to be in better harnesses. Basically, they need to be fine-tuned to be able to decompose problems a la RLM. If the process of decomposition and the decomposed parts are all in-distribution, then even if the original problem is out of distribution, the model will generalize.
+
+"the MGH posits that modern LMs are so good yet so expensive to further train, that directly learning the operator to compose LMs is a significantly more efficient strategy for reaching these OOD tasks than continuing to scale current LMs."
+
+## Notes
+* Composition as OOD generalization? Divide and conquer
+
+* Ok that is a very interesting thought: We don't need a model to generalize natively, but we need a model that is capabale of decomposing a problem such that it understands it. Divide and conquer basicially, split, conquer, merge.
+(underlying philosopy: A single massive problem (or enemy) is far more dangerous than the sum of its parts. As a system or group grows, the number of internal connections and potential energy grows exponentially. By severing those connections, you drastically reduce its overall strength. -> so one is reversing the effects of emergence in a sense) 
+
+* For ARC-AGI, can we do the same? so instead of relying on the llm to do nice decomposition, we explizitly train for it? One llm that extracts part of the grid, another one that then solves it for all examples, then it gets merged back etc. maybe the choosing llm always has to choose all tokens to one of several calculator llms. basically how llms work internally, but explizitly in a discrete way.
+
+* For long context worK: Can we construct a min-max game, where model needs to get maximally good score but only using minimal token amount? it can delete its own tokens, and query from long prompt etc etc, but its "working memory" is tiny. Those kinds of models will also be easier to train as they dont need such massive amounts of context. they can also store stuff in database etc.
+
+# https://alexzhang13.github.io/blog/2026/harness/
+
+"Modern post-training has become a brute-force paradigm of curating ever more environments and ever longer training horizons. In large part, this is because frontier Transformers are still poor at compositional generalization, the ability to solve unseen problems by composing familiar ones."
+
+-> Better generalization via harness
+"The primary job of the harness should be to carry a higher-level (than token level) inductive bias that can reduce unfamiliar and complex problems to compositions of simpler ones for the underlying neural network."
+
+
+"good harness is one that shapes each call to the underlying Transformer so that every observation is locally in-distribution,"
+
+Here they show: "what a model learns through a well-designed harness generalizes across task lengths and across domains far better than training the neural network on its own does."
+-> they train a LLM with a RLM harness and show that it generlaizes far better for longer sequences and data shift
+
+## Notes
+* Maybe: OOD generalization is not possible in the strict sense. Instead OOD generalization comes from being able to decompose arbitrary problems. Maybe those two are the same...
+
+* I can't just put my finger on that but I have the inutition that larger models effectivly are akin to training with a RLM harness, in that they enable compositinality and thus better generalization.
+
+* Compositinality (being able to do divide and conquer) might be the same as pockets of reducability, just looked at inverse

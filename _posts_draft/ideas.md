@@ -378,3 +378,25 @@ Agentic system where each agent represents a paper and then they need to do hypo
 #
 It seems that restriction is the essence of intelligence and creativity. Can we have one model train and another model restrict its weights/optimizier etc
 -> wait what about one model can 0 out or lessen the weights of another model. we train the other model and observe its test loss. then we optimize the first model with that. maybe that is the most optimla way to use the data, while maybe with the 0ing we can still introduce spurious cues this model is more restricted...
+
+#
+So ie in image models, even though we train for ie dogs vs cats, the model still also learns to seperate in fur vs no fur ot smth. soo the model learns a looot of classes, not just the ones we care about. Those classes are dynamically infered. Can we train a model with fixed input but then a lot of labels so it learns the classes explizitly? 
+
+#
+Use stuff like grokalign or grokfast together with TRM to get better acc?
+
+#
+https://claude.ai/chat/e1045475-974a-4415-a9f4-a13ea04e9e1a
+
+#
+Maybe a general theme could be to disambiguate&prune. so when training a model, train in a way that different parts are clearly responsible for different things, so there is no fuzzy overlapping (like fuzzi reasoning in humans is also bad) then once one has those nice representations, pruning what is unneccessary will be easier. (inspired by https://arxiv.org/pdf/2606.19350)
+
+# 
+Causal fine-tuning: Instead of fine-tuning in a correlational way, fine-tune in a causal way.? idk
+
+#
+Training on text is not about the text but about the structural information that can be extracted from it. Like epliplexity idea. How about we train a nn on arc data, but we also train it to forget each token. And in the end it can only learn stuff that produces a good test error. 
+
+Or: maybe implement forgetting in a nn in such a way, that forgetting forgets first the memorized data, but not the structural data. then just keep forgetting and what is learned is strucutre
+
+Or: we never show the llm the input directly. rather, the llm acts as a query tool for the data. Like LLM trained not on text but it gets all text as input and can query it, like a RLM. thus the model will have never seen the input data?
