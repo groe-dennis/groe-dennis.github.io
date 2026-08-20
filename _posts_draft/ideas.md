@@ -400,3 +400,7 @@ Training on text is not about the text but about the structural information that
 Or: maybe implement forgetting in a nn in such a way, that forgetting forgets first the memorized data, but not the structural data. then just keep forgetting and what is learned is strucutre
 
 Or: we never show the llm the input directly. rather, the llm acts as a query tool for the data. Like LLM trained not on text but it gets all text as input and can query it, like a RLM. thus the model will have never seen the input data?
+
+#
+Maybe only learn the information that will be useful later on. So you dont just remember everything but you actually have a way to determine what will be useful in the future. Both as a learning strategy for me and also as a way to make llm learn.
+In humans, this can just be "interesting"

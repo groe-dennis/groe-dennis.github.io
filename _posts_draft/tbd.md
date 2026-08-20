@@ -53,3 +53,11 @@ Seems interesting but dense (a new attn mechanism that operates at criticality a
 Some open tabs idk https://gemini.google.com/app/a9597c1e6fe1949f?hl=de, https://chatgpt.com/c/6a16dbc3-99b8-83eb-9814-03a3a782cc9c, https://grok.com/c/b45a683a-caf0-40ab-9988-198bcd880c25?rid=0e2e831e-a2ad-466a-8202-7f9d8388d47e
 https://nvidianews.nvidia.com/news/nvidia-launches-ising-the-worlds-first-open-ai-models-to-accelerate-the-path-to-useful-quantum-computers "Named after a landmark mathematical model that dramatically simplified the understanding of complex physical systems, " explain more
 Maybe also more to explore in the paper https://arxiv.org/pdf/2604.28119
+
+# Micheal Levin
+Look through Michael Levin papers
+
+# Shinzen Young
+https://www.shinzen.org/mathematics-for-mystics-welcome-to-my-geek-out/
+https://www.shinzen.org/geek-out-part-deux/
+https://www.awakin.org/v2/calls/731/shinzen-young/nuggets

@@ -2627,3 +2627,80 @@ Here they show: "what a model learns through a well-designed harness generalizes
 * I can't just put my finger on that but I have the inutition that larger models effectivly are akin to training with a RLM harness, in that they enable compositinality and thus better generalization.
 
 * Compositinality (being able to do divide and conquer) might be the same as pockets of reducability, just looked at inverse
+
+# INTELLIGENCE FROM LEARNABLE NOVELTY
+Different fields have  different notions of intelligece: as data compression in statistics and machine learning, as universal computation in dynamical systems, and as adaptive behavior in agents
+
+"Each field carries its own objective, and the two most influential drives often fail in mirror image: novelty search, which seeks surprise, is transfixed by a noisy television screen, while the free-energy principle, which avoids surprise, is most content in a dark room"
+
+-> To solve the issues, they seperate the surprise a learner can convert into knowledge and the surprise it never can
+-> so basically epiplexity
+
+-> They use reservoir computing and a cheap approximization of epiplexity to train a model
+-> show that this leads to interesting behavior, i.e. chosing rule 110 and also clustering MNIST correctly
+
+
+## 3 A Closed-Form Estimator of Epiplexity
+Evaluating epiplexity amounts to a full training run of every sytem scored so they need a cheaper approximation and also this has no gradients (they claim)
+
+-> they shift to reservoir computing -> Because all learning is pushed to a single linear layer, finding the optimal parameters no longer requires iterative gradient descent—it can be solved analytically in one step. (with ridge regression which is linear regression with weight decay)
+
+Once $W_\lambda$ is computed, its singular values $s_i(W_\lambda)$ are extracted
+
+Epiplexity $S_\phi(Y\vert{}X)$ is measured as the spectral description length of this optimal readout $W_\lambda$:$$S_\phi(Y \vert{} X) = \frac{1}{2} \log_2 \det \left( I_m + \eta W_\lambda W_\lambda^\top \right) = \frac{1}{2} \sum_i \log_2 \left( 1 + \eta s_i(W_\lambda)^2 \right)$$
+
+Each singular value $s_i(W_\lambda)$ measures the magnitude or strength of information passing through a specific independent linear channel.
+So if they weights have many high/non-zero values the epiplexity is high, the log makes it such that they all contribute and one big one is not enough.
+
+ScenarioWhat Wλ​ Looks LikeSingular Values (si​)Epiplexity (Sϕ​)A Dark Room(Boring / Static Data)Almost no signals to learn. $W_\lambda$ stays near zero.$s_i \approx 0$ for all $i$.Very LowA Noisy TV(Pure White Noise)No reproducible structure. Ridge penalty $\lambda$ suppresses weights to prevent overfitting to random chaos.$s_i \approx 0$ for all $i$.Very Low
+
+
+They say ridge regression is a good estimator of minimal bit length, because to a first taylor expansion, for small weights its the same.
+
+## 4.1 Dynamical systems
+They test their approximation on cellular automata. They find out that rule 110, which is turing complete and thus most interesting, is ranked the highest.
+
+They also optimize a neural cellular auomata for high epiplexity and find out that they create "solitons", which are A localized, coherent wave-like structure that moves across the grid at a constant velocity without decaying, and interacts cleanly when colliding with other solitons. Solitons are the physical mechanism Rule 110 and real-world biological/physical systems use to transmit and combine information across space.
+
+Why Solitons: 
+Predictable Motion (Learnable): Because a soliton moves across space at a fixed velocity, its step-by-step transformation is structured and predictable. The linear reservoir readout can easily capture this regularity, producing strong singular values.
+Continuous Collisions (Novelty): When two solitons travel and crash into each other, their collisions create brand-new, complex localized configurations that the reservoir readout has not yet absorbed.
+-> They sit at the edge of order and chaos
+
+## 4.2 Representation learning
+Use MNIST and train an encoder that then via reservoir is mapped to a prediction. Without any seen labels only by maximizing epiplexity, they see that it is mapped into 10 distinct classes, with a simple knn on top achieving 89% acc.
+
+To maximize $S_\phi$, the encoder is forced to shed this static redundancy and focus entirely on the factors that create the most substantive, structured variation between inputs—which happen to be the digit shapes themselves.
+
+## Notes
+Pre-pretraining by having whatever modality but not the loss of prediction but rather loss of learnable novelty or similar things.
+
+* What happens when we pretrain a nn on text with that loss?
+
+* "An objective that sees only the sum can be
+driven to either extreme by moving one component alone." This seems to be a general principle. where else could we seperate a loss in two or more components to optimize better?
+
+* Can we not just use lora with a standard transformer as a similar cheap approximation, I think this should be possible someway
+
+# Why Larger Models Learn More: Effects of Capacity, Interference, and Rare-Task Retention
+
+1. The Core Research Question & Thesis
+Standard scaling laws tell us that increasing model size, data, or compute improves overall loss in a predictable power-law fashion. However, macroscopic loss curves mask a critical sub-phenomenon: task acquisition.
+
+Small models often completely fail to acquire rare or complex tasks, while larger models succeed.
+
+The Common Assumption: Small models fail because they lack the raw capacity (number of parameters/neurons) to represent the task.
+
+The Paper's Thesis: Capacity is rarely the main bottleneck. Instead, the failure of small models is driven by a data-induced competition over resources and gradient interference. Small models fail to acquire rare/complex tasks because gradient updates from frequent/simple tasks continuously overwrite (or "steamroll") the representations needed for rare tasks. Larger models circumvent this issue through reduced gradient interference.
+
+-> Capacity Misconception: The authors demonstrate that even when small models could theoretically fit both frequent and rare tasks (expressibility exists), the dynamics of SGD (Stochastic Gradient Descent) prevent them from doing so.
+
+* In Small Models:
+
+Frequent/common tasks produce massive, persistent gradient updates throughout training because the small model struggles to fully minimize their loss to zero.
+
+As the model attempts to learn a rare or complex task, any faint feature built by occasional rare-task gradients gets overwritten on subsequent steps by dominant gradients from common tasks.
+
+## Notes
+
+* Ok this seems reasonable to me, could we circumvent this with an epiplexity idea? So basically that we don't try to memorize text that is unlearnable, and instead focus on the learnable part. This would mean that also small models get a 0 loss and thus the gradients might not be dominated...
